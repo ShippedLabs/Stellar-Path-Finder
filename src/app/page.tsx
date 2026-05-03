@@ -1,4 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import { PathForm } from "@/components/path-form";
+import type { FindPathsInput } from "@/types/path";
+
 export default function HomePage() {
+  const [lastInput, setLastInput] = useState<FindPathsInput | null>(null);
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
       <header className="space-y-3">
@@ -16,10 +24,19 @@ export default function HomePage() {
       </header>
 
       <section className="mt-12 rounded-xl border border-slate-800 bg-slate-900/40 p-8">
-        <p className="text-slate-400">
-          Form, route graph, and comparison table land in upcoming commits.
-        </p>
+        <PathForm onSubmit={setLastInput} />
       </section>
+
+      {lastInput ? (
+        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+          <p className="mb-2 text-xs uppercase tracking-wider text-slate-500">
+            Last submission (paths land in next commit)
+          </p>
+          <pre className="overflow-x-auto text-xs text-slate-300">
+            {JSON.stringify(lastInput, null, 2)}
+          </pre>
+        </section>
+      ) : null}
     </main>
   );
 }
