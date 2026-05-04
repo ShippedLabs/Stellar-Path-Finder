@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { assetLabel } from "@/types/path";
+import { Fragment, useMemo, useState } from "react";
+import { PathGraph } from "@/components/path-graph";
+import { assetKey, assetLabel } from "@/types/path";
 import type { Path } from "@/types/path";
 
 type SortKey = "rate" | "send" | "receive" | "hops";
@@ -42,9 +43,20 @@ function formatAmount(value: string): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function pathId(path: Path): string {
+  return [
+    assetKey(path.source),
+    ...path.hops.map(assetKey),
+    assetKey(path.destination),
+    path.sourceAmount,
+    path.destinationAmount,
+  ].join("|");
+}
+
 export function PathList({ paths }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const sorted = useMemo(() => {
     const list = [...paths];
@@ -62,6 +74,10 @@ export function PathList({ paths }: Props) {
     }
     setSortKey(key);
     setSortDir(key === "hops" ? "asc" : "desc");
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedId((prev) => (prev === id ? null : id));
   };
 
   if (paths.length === 0) {
@@ -94,32 +110,72 @@ export function PathList({ paths }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
-          {sorted.map((path, i) => (
-            <tr
-              key={i}
-              className="bg-slate-900/20 transition-colors hover:bg-slate-900/40"
-            >
-              <td className="px-4 py-3 font-medium text-slate-100">
-                {assetLabel(path.source)}
-                <span className="mx-1.5 text-slate-600">→</span>
-                {assetLabel(path.destination)}
-              </td>
-              <td className="px-4 py-3 text-slate-300">
-                {formatAmount(path.sourceAmount)}{" "}
-                <span className="text-slate-500">{assetLabel(path.source)}</span>
-              </td>
-              <td className="px-4 py-3 text-slate-300">
-                {formatAmount(path.destinationAmount)}{" "}
-                <span className="text-slate-500">
-                  {assetLabel(path.destination)}
-                </span>
-              </td>
-              <td className="px-4 py-3 font-medium text-emerald-300">
-                {formatAmount(path.rate)}
-              </td>
-              <td className="px-4 py-3 text-slate-400">{path.hops.length}</td>
-            </tr>
-          ))}
+          {sorted.map((path) => {
+            const id = pathId(path);
+            const isSelected = id === selectedId;
+            return (
+              <Fragment key={id}>
+                <tr
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isSelected}
+                  onClick={() => toggleSelect(id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggleSelect(id);
+                    }
+                  }}
+                  className={
+                    "cursor-pointer transition-colors " +
+                    (isSelected
+                      ? "bg-emerald-500/5 hover:bg-emerald-500/10"
+                      : "bg-slate-900/20 hover:bg-slate-900/40")
+                  }
+                >
+                  <td className="px-4 py-3 font-medium text-slate-100">
+                    <span
+                      aria-hidden
+                      className={
+                        "mr-2 inline-block w-3 text-xs transition-transform " +
+                        (isSelected ? "text-emerald-400" : "text-slate-600")
+                      }
+                    >
+                      {isSelected ? "▾" : "▸"}
+                    </span>
+                    {assetLabel(path.source)}
+                    <span className="mx-1.5 text-slate-600">→</span>
+                    {assetLabel(path.destination)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">
+                    {formatAmount(path.sourceAmount)}{" "}
+                    <span className="text-slate-500">
+                      {assetLabel(path.source)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">
+                    {formatAmount(path.destinationAmount)}{" "}
+                    <span className="text-slate-500">
+                      {assetLabel(path.destination)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-emerald-300">
+                    {formatAmount(path.rate)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {path.hops.length}
+                  </td>
+                </tr>
+                {isSelected ? (
+                  <tr className="bg-slate-950">
+                    <td colSpan={COLUMNS.length} className="px-4 py-4">
+                      <PathGraph path={path} />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
