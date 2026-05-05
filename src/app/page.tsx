@@ -1,12 +1,22 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
+import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
 
 export default function HomePage() {
-  const { paths, loading, error, hasSearched, search } = usePaths();
+  const { network } = useNetwork();
+  const { paths, loading, error, hasSearched, search, reset } = usePaths();
+  const lastNetwork = useRef(network);
+
+  useEffect(() => {
+    if (lastNetwork.current === network) return;
+    lastNetwork.current = network;
+    reset();
+  }, [network, reset]);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
