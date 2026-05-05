@@ -5,13 +5,14 @@ import { AssetSelector } from "@/components/asset-selector";
 import { NetworkToggle } from "@/components/network-toggle";
 import { useNetwork } from "@/hooks/use-network";
 import { knownAssets } from "@/lib/asset-registry";
+import {
+  EMPTY_CUSTOM_ASSETS,
+  loadCustomAssets,
+  saveCustomAssets,
+  type CustomAssetMap,
+} from "@/lib/custom-assets";
 import { assetKey } from "@/types/path";
-import type {
-  AssetRef,
-  Direction,
-  FindPathsInput,
-  Network,
-} from "@/types/path";
+import type { AssetRef, Direction, FindPathsInput } from "@/types/path";
 
 interface Props {
   onSubmit: (input: FindPathsInput) => void;
@@ -31,11 +32,6 @@ const DIRECTIONS: { value: Direction; label: string; hint: string }[] = [
   },
 ];
 
-const EMPTY_CUSTOM: Record<Network, AssetRef[]> = {
-  mainnet: [],
-  testnet: [],
-};
-
 export function PathForm({ onSubmit, loading = false }: Props) {
   const { network } = useNetwork();
   const initial = knownAssets(network);
@@ -46,9 +42,13 @@ export function PathForm({ onSubmit, loading = false }: Props) {
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<Direction>("strict-send");
   const [customByNetwork, setCustomByNetwork] =
-    useState<Record<Network, AssetRef[]>>(EMPTY_CUSTOM);
+    useState<CustomAssetMap>(EMPTY_CUSTOM_ASSETS);
 
   const customAssets = customByNetwork[network];
+
+  useEffect(() => {
+    setCustomByNetwork(loadCustomAssets());
+  }, []);
 
   useEffect(() => {
     const list = knownAssets(network);
@@ -64,7 +64,12 @@ export function PathForm({ onSubmit, loading = false }: Props) {
         if (list.some((existing) => assetKey(existing) === newKey)) {
           return prev;
         }
-        return { ...prev, [network]: [...list, asset] };
+        const next: CustomAssetMap = {
+          ...prev,
+          [network]: [...list, asset],
+        };
+        saveCustomAssets(next);
+        return next;
       });
     },
     [network],
