@@ -1,6 +1,7 @@
 "use client";
 
 import { PathForm } from "@/components/path-form";
+import { PathList } from "@/components/path-list";
 import { usePaths } from "@/hooks/use-paths";
 
 export default function HomePage() {
@@ -42,14 +43,12 @@ export default function HomePage() {
       ) : null}
 
       {paths.length > 0 ? (
-        <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p className="mb-3 text-xs uppercase tracking-wider text-slate-500">
-            Found {paths.length} path{paths.length === 1 ? "" : "s"} · graph
-            and table land in Day 3
+        <section className="mt-6 space-y-3">
+          <p className="text-xs uppercase tracking-wider text-slate-500">
+            Found {paths.length} path{paths.length === 1 ? "" : "s"} · click a
+            row to inspect the route
           </p>
-          <pre className="overflow-x-auto text-xs text-slate-300">
-            {JSON.stringify(paths, null, 2)}
-          </pre>
+          <PathList paths={paths} />
         </section>
       ) : null}
     </main>

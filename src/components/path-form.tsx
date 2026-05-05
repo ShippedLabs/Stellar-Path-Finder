@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AssetSelector } from "@/components/asset-selector";
 import { NetworkToggle } from "@/components/network-toggle";
 import { useNetwork } from "@/hooks/use-network";
 import { knownAssets } from "@/lib/asset-registry";
 import { assetKey } from "@/types/path";
-import type { AssetRef, Direction, FindPathsInput } from "@/types/path";
+import type {
+  AssetRef,
+  Direction,
+  FindPathsInput,
+  Network,
+} from "@/types/path";
 
 interface Props {
   onSubmit: (input: FindPathsInput) => void;
@@ -26,6 +31,11 @@ const DIRECTIONS: { value: Direction; label: string; hint: string }[] = [
   },
 ];
 
+const EMPTY_CUSTOM: Record<Network, AssetRef[]> = {
+  mainnet: [],
+  testnet: [],
+};
+
 export function PathForm({ onSubmit, loading = false }: Props) {
   const { network } = useNetwork();
   const initial = knownAssets(network);
@@ -35,12 +45,30 @@ export function PathForm({ onSubmit, loading = false }: Props) {
   );
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<Direction>("strict-send");
+  const [customByNetwork, setCustomByNetwork] =
+    useState<Record<Network, AssetRef[]>>(EMPTY_CUSTOM);
+
+  const customAssets = customByNetwork[network];
 
   useEffect(() => {
     const list = knownAssets(network);
     setSource(list[0]);
     setDestination(list[1] ?? list[0]);
   }, [network]);
+
+  const addCustomAsset = useCallback(
+    (asset: AssetRef) => {
+      setCustomByNetwork((prev) => {
+        const list = prev[network];
+        const newKey = assetKey(asset);
+        if (list.some((existing) => assetKey(existing) === newKey)) {
+          return prev;
+        }
+        return { ...prev, [network]: [...list, asset] };
+      });
+    },
+    [network],
+  );
 
   const sameAsset = assetKey(source) === assetKey(destination);
   const numericAmount = Number(amount);
@@ -67,6 +95,8 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           network={network}
           value={source}
           onChange={setSource}
+          customAssets={customAssets}
+          onAddCustom={addCustomAsset}
         />
         <AssetSelector
           id="destination-asset"
@@ -74,6 +104,8 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           network={network}
           value={destination}
           onChange={setDestination}
+          customAssets={customAssets}
+          onAddCustom={addCustomAsset}
         />
       </div>
 
