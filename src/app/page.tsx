@@ -1,5 +1,6 @@
 "use client";
 
+import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
 import { usePaths } from "@/hooks/use-paths";
@@ -43,13 +44,16 @@ export default function HomePage() {
       ) : null}
 
       {paths.length > 0 ? (
-        <section className="mt-6 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-slate-500">
-            Found {paths.length} path{paths.length === 1 ? "" : "s"} · click a
-            row to inspect the route
-          </p>
-          <PathList paths={paths} />
-        </section>
+        <div className="mt-8 space-y-8">
+          <PathComparison paths={paths} />
+          <section className="space-y-3">
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              All {paths.length} path{paths.length === 1 ? "" : "s"} · click a
+              row to inspect the route
+            </p>
+            <PathList paths={paths} />
+          </section>
+        </div>
       ) : null}
     </main>
   );
