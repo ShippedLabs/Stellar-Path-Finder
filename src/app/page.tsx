@@ -30,7 +30,7 @@ export default function HomePage() {
         </h1>
         <p className="max-w-2xl text-slate-400">
           Compare path payment routes between any two assets on the Stellar
-          network. Pick a source, a destination, and an amount — see every hop,
+          network. Pick a source, a destination, and an amount. See every hop,
           every price, and the best rate at a glance.
         </p>
       </header>

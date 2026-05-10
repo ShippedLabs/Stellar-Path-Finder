@@ -6,7 +6,7 @@ Stellar lets you send one asset and have the recipient receive a different asset
 
 It's the Skyscanner equivalent for Stellar path payments.
 
-**Live demo:** coming soon
+**Live demo:** https://stellar-path-finder.vercel.app
 
 ## Screenshots
 
