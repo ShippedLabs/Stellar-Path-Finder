@@ -11,6 +11,8 @@ It's the Skyscanner equivalent for Stellar path payments.
 ## Screenshots
 
 ![Home with form and results](docs/screenshots/home.png)
+<br><br>
+![Routes](docs/screenshots/routes.png)
 
 ![Expanded route graph](docs/screenshots/route-graph.png)
 
