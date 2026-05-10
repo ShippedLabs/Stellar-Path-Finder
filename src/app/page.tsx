@@ -20,12 +20,12 @@ export default function HomePage() {
   }, [network, reset]);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
       <header className="space-y-3">
         <p className="text-xs uppercase tracking-[0.2em] text-emerald-400">
           Stellar · Path Payments
         </p>
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Stellar Path Finder
         </h1>
         <p className="max-w-2xl text-slate-400">
@@ -35,7 +35,7 @@ export default function HomePage() {
         </p>
       </header>
 
-      <section className="mt-12 rounded-xl border border-slate-800 bg-slate-900/40 p-8">
+      <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900/40 p-5 sm:mt-12 sm:p-8">
         <PathForm onSubmit={search} loading={loading} />
       </section>
 

@@ -16,25 +16,43 @@ export function ResultsSkeleton() {
       <section className="space-y-3">
         <div className="h-3 w-28 rounded bg-slate-800" />
         <div className="overflow-hidden rounded-xl border border-slate-800">
-          <div className="flex gap-8 bg-slate-900/60 px-4 py-3">
-            {[140, 100, 100, 60, 40].map((w, i) => (
+          <div className="flex gap-6 bg-slate-900/60 px-4 py-3">
+            {[
+              { w: 140, hide: false },
+              { w: 100, hide: true },
+              { w: 100, hide: true },
+              { w: 60, hide: false },
+              { w: 40, hide: false },
+            ].map(({ w, hide }, i) => (
               <div
                 key={i}
                 style={{ width: w }}
-                className="h-2.5 rounded bg-slate-800"
+                className={
+                  "h-2.5 shrink-0 rounded bg-slate-800" +
+                  (hide ? " hidden sm:block" : "")
+                }
               />
             ))}
           </div>
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="flex gap-8 border-t border-slate-800 px-4 py-3.5"
+              className="flex gap-6 border-t border-slate-800 px-4 py-3.5"
             >
-              {[140, 100, 100, 60, 40].map((w, j) => (
+              {[
+                { w: 140, hide: false },
+                { w: 100, hide: true },
+                { w: 100, hide: true },
+                { w: 60, hide: false },
+                { w: 40, hide: false },
+              ].map(({ w, hide }, j) => (
                 <div
                   key={j}
                   style={{ width: w }}
-                  className="h-2.5 rounded bg-slate-800/70"
+                  className={
+                    "h-2.5 shrink-0 rounded bg-slate-800/70" +
+                    (hide ? " hidden sm:block" : "")
+                  }
                 />
               ))}
             </div>

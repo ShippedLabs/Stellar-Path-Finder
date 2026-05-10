@@ -12,10 +12,15 @@ interface Props {
   paths: Path[];
 }
 
-const COLUMNS: { key: SortKey | "pair"; label: string; sortable: boolean }[] = [
+const COLUMNS: {
+  key: SortKey | "pair";
+  label: string;
+  sortable: boolean;
+  mobileHidden?: boolean;
+}[] = [
   { key: "pair", label: "Pair", sortable: false },
-  { key: "send", label: "Send", sortable: true },
-  { key: "receive", label: "Receive", sortable: true },
+  { key: "send", label: "Send", sortable: true, mobileHidden: true },
+  { key: "receive", label: "Receive", sortable: true, mobileHidden: true },
   { key: "rate", label: "Rate", sortable: true },
   { key: "hops", label: "Hops", sortable: true },
 ];
@@ -90,7 +95,14 @@ export function PathList({ paths }: Props) {
         <thead className="bg-slate-900/60 text-xs uppercase tracking-wider text-slate-500">
           <tr>
             {COLUMNS.map((col) => (
-              <th key={col.key} scope="col" className="px-4 py-3 font-medium">
+              <th
+                key={col.key}
+                scope="col"
+                className={
+                  "px-4 py-3 font-medium" +
+                  (col.mobileHidden ? " hidden sm:table-cell" : "")
+                }
+              >
                 {col.sortable ? (
                   <button
                     type="button"
@@ -147,13 +159,13 @@ export function PathList({ paths }: Props) {
                     <span className="mx-1.5 text-slate-600">→</span>
                     {assetLabel(path.destination)}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="hidden px-4 py-3 text-slate-300 sm:table-cell">
                     {formatAmount(path.sourceAmount)}{" "}
                     <span className="text-slate-500">
                       {assetLabel(path.source)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="hidden px-4 py-3 text-slate-300 sm:table-cell">
                     {formatAmount(path.destinationAmount)}{" "}
                     <span className="text-slate-500">
                       {assetLabel(path.destination)}
