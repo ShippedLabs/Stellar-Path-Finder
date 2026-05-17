@@ -72,6 +72,18 @@ export default function HomePage() {
           ) : null}
         </>
       )}
+      <footer className="mt-16 border-t border-slate-800 pt-6 text-center text-xs text-slate-600">
+        <a
+          href="https://github.com/ShippedLabs/Stellar-Path-Finder"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="transition-colors hover:text-slate-400"
+        >
+          View on GitHub
+        </a>
+        <span className="mx-2">·</span>
+        <span>Powered by Stellar Horizon</span>
+      </footer>
     </main>
   );
 }
