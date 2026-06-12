@@ -76,6 +76,11 @@ Things deliberately out of scope for the first release, in rough priority order:
 - **Live polling** to track route quality over time.
 - **Historical price charts** per asset pair.
 
+## Documentation
+
+- [Technical documentation](docs/documentation.md) - architecture, data flow, component breakdown, and how everything fits together.
+- [Contributing guide](docs/contributing.md) - how to set up locally, branch conventions, PR guidelines, and ways to contribute.
+
 ## License
 
 MIT
