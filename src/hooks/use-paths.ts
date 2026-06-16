@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { findPaths } from "@/lib/path-finder";
+import { attachHopRates, findPaths } from "@/lib/path-finder";
 import type { FindPathsInput, Path } from "@/types/path";
 
 interface UsePathsResult {
@@ -38,6 +38,16 @@ export function usePaths(): UsePathsResult {
       const results = await findPaths(input);
       if (id !== requestId.current) return;
       setPaths(results);
+
+      // Enrich with per-hop rates in the background so the initial results
+      // render immediately. A late or failed enrichment leaves base paths intact.
+      void attachHopRates(input.network, results)
+        .then((enriched) => {
+          if (id === requestId.current) setPaths(enriched);
+        })
+        .catch(() => {
+          /* keep paths without hop rates */
+        });
     } catch (err) {
       if (id !== requestId.current) return;
       setError(describeError(err));
