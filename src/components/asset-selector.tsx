@@ -49,6 +49,11 @@ export function AssetSelector({
 
   const assets = [...knownAssets(network), ...customAssets];
   const selectedKey = assetKey(value);
+  
+  // Accessibility: Create dynamic IDs for form inputs and error
+  const codeInputId = `${id}-custom-code`;
+  const issuerInputId = `${id}-custom-issuer`;
+  const errorId = `${id}-custom-error`;
 
   const resetForm = () => {
     setShowForm(false);
@@ -91,7 +96,7 @@ export function AssetSelector({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={id}
-        className="text-xs font-medium uppercase tracking-wider text-slate-400"
+        className="text-sm font-semibold uppercase tracking-wider text-slate-300"
       >
         {label}
       </label>
@@ -104,7 +109,7 @@ export function AssetSelector({
           );
           if (next) onChange(next);
         }}
-        className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 transition-colors focus:border-emerald-500 focus:outline-none"
+        className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         {assets.map((asset) => (
           <option key={assetKey(asset)} value={assetKey(asset)}>
@@ -117,48 +122,64 @@ export function AssetSelector({
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="self-start text-xs text-slate-500 transition-colors hover:text-emerald-400"
+          className="self-start text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-sm"
         >
           + Add custom asset
         </button>
       ) : null}
 
       {onAddCustom && showForm ? (
-        <div className="mt-1 space-y-2 rounded-lg border border-slate-800 bg-slate-950 p-3">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              value={customCode}
-              onChange={(event) => setCustomCode(event.target.value)}
-              placeholder="Code (e.g. NGNT)"
-              maxLength={12}
-              className="flex-1 rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:border-emerald-500 focus:outline-none"
-            />
-            <input
-              type="text"
-              value={customIssuer}
-              onChange={(event) => setCustomIssuer(event.target.value)}
-              placeholder="Issuer (G…)"
-              spellCheck={false}
-              autoCapitalize="off"
-              className="flex-[2] rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1.5 font-mono text-xs text-slate-100 placeholder-slate-600 focus:border-emerald-500 focus:outline-none"
-            />
+        <div className="mt-1 space-y-3 rounded-lg border border-slate-700 bg-slate-950 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex-1 flex flex-col gap-1">
+              <label htmlFor={codeInputId} className="sr-only">Custom Asset Code</label>
+              <input
+                id={codeInputId}
+                type="text"
+                value={customCode}
+                onChange={(event) => setCustomCode(event.target.value)}
+                placeholder="Code (e.g. NGNT)"
+                maxLength={12}
+                // Accessibility: Associate error and indicate invalid state
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : undefined}
+                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <div className="flex-[2] flex flex-col gap-1">
+              <label htmlFor={issuerInputId} className="sr-only">Custom Asset Issuer</label>
+              <input
+                id={issuerInputId}
+                type="text"
+                value={customIssuer}
+                onChange={(event) => setCustomIssuer(event.target.value)}
+                placeholder="Issuer (G…)"
+                spellCheck={false}
+                autoCapitalize="off"
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : undefined}
+                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-sm text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
           </div>
+          {/* Accessibility: Render error with matching ID */}
           {error ? (
-            <p className="text-xs text-rose-400">{error}</p>
+            <p id={errorId} className="text-sm font-medium text-rose-300" aria-live="assertive">
+              {error}
+            </p>
           ) : null}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleAdd}
-              className="rounded-md bg-emerald-500 px-3 py-1 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400"
+              className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
               Add
             </button>
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-md px-3 py-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
+              className="rounded-md px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
               Cancel
             </button>
