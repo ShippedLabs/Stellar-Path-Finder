@@ -59,6 +59,14 @@ function AssetNode({ data }: NodeProps<NodeData>) {
 
 const nodeTypes: NodeTypes = { asset: AssetNode };
 
+function formatRate(rate: string): string {
+  const n = Number(rate);
+  if (!Number.isFinite(n)) return rate; // e.g. "N/A"
+  if (n === 0) return "0";
+  if (n < 0.0001) return n.toExponential(2);
+  return n.toFixed(7).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 interface Props {
   path: Path;
   height?: number;
@@ -83,13 +91,22 @@ function buildGraph(path: Path): { nodes: Node<NodeData>[]; edges: Edge[] } {
     };
   });
 
-  const edges: Edge[] = nodes.slice(1).map((node, i) => ({
-    id: `e-${i}`,
-    source: nodes[i].id,
-    target: node.id,
-    animated: true,
-    style: { stroke: "#10b981", strokeWidth: 1.5 },
-  }));
+  const edges: Edge[] = nodes.slice(1).map((node, i) => {
+    const rate = path.hopRates?.[i];
+    return {
+      id: `e-${i}`,
+      source: nodes[i].id,
+      target: node.id,
+      animated: true,
+      label: rate ? formatRate(rate) : undefined,
+      labelShowBg: true,
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 4,
+      labelBgStyle: { fill: "#0f172a", stroke: "#1e293b" },
+      labelStyle: { fill: "#34d399", fontSize: 11, fontWeight: 600 },
+      style: { stroke: "#10b981", strokeWidth: 1.5 },
+    };
+  });
 
   return { nodes, edges };
 }
