@@ -25,7 +25,7 @@ interface HorizonPathRecord {
   path: HorizonAssetFields[];
 }
 
-function toSdkAsset(ref: AssetRef): Asset {
+export function toSdkAsset(ref: AssetRef): Asset {
   if (ref.type === "native") return Asset.native();
   if (!ref.issuer) {
     throw new Error(`Asset ${ref.code} requires an issuer`);
