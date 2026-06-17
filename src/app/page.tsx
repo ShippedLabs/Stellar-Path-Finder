@@ -5,6 +5,7 @@ import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
 import { ResultsSkeleton } from "@/components/results-skeleton";
+import { SavedPairsChips } from "@/components/saved-pairs-chips";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
 
@@ -12,7 +13,7 @@ export default function HomePage() {
   const { network } = useNetwork();
   const { paths, loading, error, hasSearched, search, reset } = usePaths();
   const lastNetwork = useRef(network);
-  
+
   // Accessibility: State for ARIA live region announcements
   const [announcement, setAnnouncement] = useState("");
 
@@ -31,7 +32,9 @@ export default function HomePage() {
       } else if (paths.length === 0) {
         setAnnouncement("No routes found between these assets at this amount.");
       } else {
-        setAnnouncement(`Found ${paths.length} routes. Sorted by rate, descending.`);
+        setAnnouncement(
+          `Found ${paths.length} routes. Sorted by rate, descending.`,
+        );
       }
     }
   }, [hasSearched, loading, error, paths.length]);
@@ -58,6 +61,7 @@ export default function HomePage() {
       </header>
 
       <section className="mt-8 rounded-xl border border-slate-700 bg-slate-900/40 p-5 sm:mt-12 sm:p-8">
+        <SavedPairsChips network={network} onSelectPair={search} />
         <PathForm onSubmit={search} loading={loading} />
       </section>
 
@@ -103,7 +107,9 @@ export default function HomePage() {
         >
           View on GitHub
         </a>
-        <span className="mx-2" aria-hidden="true">·</span>
+        <span className="mx-2" aria-hidden="true">
+          ·
+        </span>
         <span>Powered by Stellar Horizon</span>
       </footer>
     </main>

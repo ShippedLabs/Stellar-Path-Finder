@@ -11,6 +11,7 @@ import {
   saveCustomAssets,
   type CustomAssetMap,
 } from "@/lib/custom-assets";
+import { savePair } from "@/lib/saved-pairs";
 import { assetKey } from "@/types/path";
 import type { AssetRef, Direction, FindPathsInput } from "@/types/path";
 
@@ -45,6 +46,7 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     useState<CustomAssetMap>(EMPTY_CUSTOM_ASSETS);
 
   const customAssets = customByNetwork[network];
+  const [saveNotification, setSaveNotification] = useState<string | null>(null);
 
   useEffect(() => {
     setCustomByNetwork(loadCustomAssets());
@@ -80,6 +82,13 @@ export function PathForm({ onSubmit, loading = false }: Props) {
   const validAmount = Number.isFinite(numericAmount) && numericAmount > 0;
   const canSubmit = !sameAsset && validAmount && !loading;
 
+  const handleSavePair = useCallback(() => {
+    if (!canSubmit) return;
+    savePair({ network, direction, source, destination, amount });
+    setSaveNotification("Pair saved!");
+    setTimeout(() => setSaveNotification(null), 2000);
+  }, [network, direction, source, destination, amount, canSubmit]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -90,7 +99,30 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-lg font-semibold text-slate-100">Find a route</h2>
-        <NetworkToggle />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSavePair}
+            disabled={!canSubmit}
+            title="Save this pair"
+            className="relative inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M5 2h14c1.1 0 2 .9 2 2v16l-7-3-7 3V4c0-1.1.9-2 2-2z" />
+            </svg>
+            {saveNotification && (
+              <span className="absolute -top-8 whitespace-nowrap rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white">
+                {saveNotification}
+              </span>
+            )}
+          </button>
+          <NetworkToggle />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -137,7 +169,11 @@ export function PathForm({ onSubmit, loading = false }: Props) {
         />
         {/* Accessibility: Render error directly associated with input */}
         {sameAsset ? (
-          <p id="same-asset-error" className="text-sm font-medium text-amber-300" aria-live="polite">
+          <p
+            id="same-asset-error"
+            className="text-sm font-medium text-amber-300"
+            aria-live="polite"
+          >
             Source and destination assets must differ.
           </p>
         ) : null}
@@ -172,7 +208,9 @@ export function PathForm({ onSubmit, loading = false }: Props) {
                 <span className="text-sm font-semibold text-slate-100">
                   {option.label}
                 </span>
-                <span className="text-xs font-medium text-slate-400">{option.hint}</span>
+                <span className="text-xs font-medium text-slate-400">
+                  {option.hint}
+                </span>
               </label>
             );
           })}
