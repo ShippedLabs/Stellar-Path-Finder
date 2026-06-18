@@ -18,6 +18,17 @@ import type { AssetRef, Direction, FindPathsInput } from "@/types/path";
 interface Props {
   onSubmit: (input: FindPathsInput) => void;
   loading?: boolean;
+  /** Pre-populate the source asset from a shared URL. Falls back to the first
+   *  known asset for the current network when omitted or undefined. */
+  initialSource?: AssetRef;
+  /** Pre-populate the destination asset from a shared URL. Falls back to the
+   *  second known asset for the current network when omitted or undefined. */
+  initialDestination?: AssetRef;
+  /** Pre-populate the amount field from a shared URL. Defaults to "". */
+  initialAmount?: string;
+  /** Pre-populate the direction radio from a shared URL. Defaults to
+   *  "strict-send". */
+  initialDirection?: Direction;
 }
 
 const DIRECTIONS: { value: Direction; label: string; hint: string }[] = [
@@ -33,15 +44,26 @@ const DIRECTIONS: { value: Direction; label: string; hint: string }[] = [
   },
 ];
 
-export function PathForm({ onSubmit, loading = false }: Props) {
+export function PathForm({
+  onSubmit,
+  loading = false,
+  initialSource,
+  initialDestination,
+  initialAmount = "",
+  initialDirection = "strict-send",
+}: Props) {
   const { network } = useNetwork();
-  const initial = knownAssets(network);
-  const [source, setSource] = useState<AssetRef>(initial[0]);
-  const [destination, setDestination] = useState<AssetRef>(
-    initial[1] ?? initial[0],
+  const defaults = knownAssets(network);
+
+  // Seed state from URL params when provided; otherwise use registry defaults.
+  const [source, setSource] = useState<AssetRef>(
+    initialSource ?? defaults[0],
   );
-  const [amount, setAmount] = useState("");
-  const [direction, setDirection] = useState<Direction>("strict-send");
+  const [destination, setDestination] = useState<AssetRef>(
+    initialDestination ?? (defaults[1] ?? defaults[0]),
+  );
+  const [amount, setAmount] = useState(initialAmount);
+  const [direction, setDirection] = useState<Direction>(initialDirection);
   const [customByNetwork, setCustomByNetwork] =
     useState<CustomAssetMap>(EMPTY_CUSTOM_ASSETS);
 
@@ -52,10 +74,15 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     setCustomByNetwork(loadCustomAssets());
   }, []);
 
+  // When the network changes (user clicks NetworkToggle) reset to registry
+  // defaults.  We intentionally exclude initialSource/initialDestination from
+  // the dep array — once mounted the form is the single source of truth for
+  // those fields and should not reset on every render.
   useEffect(() => {
     const list = knownAssets(network);
     setSource(list[0]);
     setDestination(list[1] ?? list[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network]);
 
   const addCustomAsset = useCallback(
@@ -162,12 +189,10 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="0.00"
-          // Accessibility: Indicate invalid state when same assets selected
           aria-invalid={sameAsset}
           aria-describedby={sameAsset ? "same-asset-error" : undefined}
           className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        {/* Accessibility: Render error directly associated with input */}
         {sameAsset ? (
           <p
             id="same-asset-error"
@@ -202,7 +227,6 @@ export function PathForm({ onSubmit, loading = false }: Props) {
                   value={option.value}
                   checked={checked}
                   onChange={() => setDirection(option.value)}
-                  // Accessibility: Keep interactive element available for focus visually hidden
                   className="sr-only"
                 />
                 <span className="text-sm font-semibold text-slate-100">
