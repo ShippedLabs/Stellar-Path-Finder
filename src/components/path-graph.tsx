@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useId, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { StrKey } from "@stellar/stellar-sdk";
 import ReactFlow, {
   Background,
@@ -103,15 +110,34 @@ export function PathGraph({ path, direction, network, height = 240 }: Props) {
   const accountId = useId();
   const [account, setAccount] = useState("");
 
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>();
+
   const trimmedAccount = account.trim();
   const accountValid = StrKey.isValidEd25519PublicKey(trimmedAccount);
   const showAccountError = trimmedAccount.length > 0 && !accountValid;
 
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
+
   const handleCopy = useCallback(async () => {
     if (!accountValid) return;
-    const xdr = buildXdr(path, direction, trimmedAccount, network);
-    await navigator.clipboard.writeText(xdr);
+    clearTimeout(resetTimer.current);
+    try {
+      const xdr = buildXdr(path, direction, trimmedAccount, network);
+      await navigator.clipboard.writeText(xdr);
+      setStatus("copied");
+    } catch {
+      setStatus("error");
+    }
+    resetTimer.current = setTimeout(() => setStatus("idle"), 2000);
   }, [accountValid, path, direction, trimmedAccount, network]);
+
+  const buttonLabel =
+    status === "copied"
+      ? "Copied!"
+      : status === "error"
+        ? "Failed"
+        : "Copy XDR";
 
   return (
     <div className="space-y-4">
@@ -172,9 +198,15 @@ export function PathGraph({ path, direction, network, height = 240 }: Props) {
           type="button"
           onClick={handleCopy}
           disabled={!accountValid}
-          className="mt-1 self-start rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+          aria-live="polite"
+          className={
+            "mt-1 self-start rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 " +
+            (status === "error"
+              ? "bg-rose-500 text-slate-950 hover:bg-rose-400"
+              : "bg-emerald-500 text-slate-950 hover:bg-emerald-400")
+          }
         >
-          Copy XDR
+          {buttonLabel}
         </button>
       </div>
     </div>
