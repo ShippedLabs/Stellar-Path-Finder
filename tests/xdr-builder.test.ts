@@ -1,4 +1,4 @@
-import { Networks, TransactionBuilder } from "@stellar/stellar-sdk";
+import { BASE_FEE, Networks, TransactionBuilder } from "@stellar/stellar-sdk";
 import { buildXdr } from "@/lib/xdr-builder";
 import type { Path } from "@/types/path";
 
@@ -49,5 +49,30 @@ describe("buildXdr", () => {
     const op = tx.operations[0] as { path?: { getCode(): string }[] };
     expect(op.path).toHaveLength(1);
     expect(op.path?.[0].getCode()).toBe("AQUA");
+  });
+
+  it("maps strict-send amounts, assets, source and fee", () => {
+    const xdr = buildXdr(samplePath, "strict-send", SOURCE, "mainnet");
+    const tx = TransactionBuilder.fromXDR(xdr, Networks.PUBLIC);
+    expect(tx.source).toBe(SOURCE);
+    expect(tx.fee).toBe(BASE_FEE);
+    const op = tx.operations[0] as {
+      sendAmount: string;
+      destMin: string;
+      sendAsset: { isNative(): boolean };
+      destAsset: { getCode(): string };
+    };
+    expect(op.sendAmount).toBe("100.0000000");
+    expect(op.destMin).toBe("25.1234567");
+    expect(op.sendAsset.isNative()).toBe(true);
+    expect(op.destAsset.getCode()).toBe("USDC");
+  });
+
+  it("maps strict-receive amounts", () => {
+    const xdr = buildXdr(samplePath, "strict-receive", SOURCE, "testnet");
+    const tx = TransactionBuilder.fromXDR(xdr, Networks.TESTNET);
+    const op = tx.operations[0] as { sendMax: string; destAmount: string };
+    expect(op.sendMax).toBe("100.0000000");
+    expect(op.destAmount).toBe("25.1234567");
   });
 });
