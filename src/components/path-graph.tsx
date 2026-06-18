@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { StrKey } from "@stellar/stellar-sdk";
 import ReactFlow, {
   Background,
@@ -13,8 +13,9 @@ import ReactFlow, {
   type NodeTypes,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { buildXdr } from "@/lib/xdr-builder";
 import { assetKey, assetLabel } from "@/types/path";
-import type { AssetRef, Path } from "@/types/path";
+import type { AssetRef, Direction, Network, Path } from "@/types/path";
 
 type NodeRole = "source" | "hop" | "destination";
 
@@ -62,6 +63,8 @@ const nodeTypes: NodeTypes = { asset: AssetNode };
 
 interface Props {
   path: Path;
+  direction: Direction;
+  network: Network;
   height?: number;
 }
 
@@ -95,7 +98,7 @@ function buildGraph(path: Path): { nodes: Node<NodeData>[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
-export function PathGraph({ path, height = 240 }: Props) {
+export function PathGraph({ path, direction, network, height = 240 }: Props) {
   const { nodes, edges } = useMemo(() => buildGraph(path), [path]);
   const accountId = useId();
   const [account, setAccount] = useState("");
@@ -103,6 +106,12 @@ export function PathGraph({ path, height = 240 }: Props) {
   const trimmedAccount = account.trim();
   const accountValid = StrKey.isValidEd25519PublicKey(trimmedAccount);
   const showAccountError = trimmedAccount.length > 0 && !accountValid;
+
+  const handleCopy = useCallback(async () => {
+    if (!accountValid) return;
+    const xdr = buildXdr(path, direction, trimmedAccount, network);
+    await navigator.clipboard.writeText(xdr);
+  }, [accountValid, path, direction, trimmedAccount, network]);
 
   return (
     <div className="space-y-4">
@@ -159,6 +168,14 @@ export function PathGraph({ path, height = 240 }: Props) {
             Enter a valid Stellar account address starting with G.
           </p>
         ) : null}
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={!accountValid}
+          className="mt-1 self-start rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+        >
+          Copy XDR
+        </button>
       </div>
     </div>
   );
