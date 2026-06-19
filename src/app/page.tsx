@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { NoRoutesEmptyState } from "@/components/no-routes-empty-state";
 import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
@@ -10,7 +11,8 @@ import { usePaths } from "@/hooks/use-paths";
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, search, reset } = usePaths();
+  const { paths, loading, error, hasSearched, lastInput, search, reset } =
+    usePaths();
   const lastNetwork = useRef(network);
 
   useEffect(() => {
@@ -51,11 +53,7 @@ export default function HomePage() {
           ) : null}
 
           {hasSearched && !error && paths.length === 0 ? (
-            <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm text-slate-400">
-                No routes found between these assets at this amount.
-              </p>
-            </section>
+            <NoRoutesEmptyState input={lastInput} />
           ) : null}
 
           {paths.length > 0 ? (
