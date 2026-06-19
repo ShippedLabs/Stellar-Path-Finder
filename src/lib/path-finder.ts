@@ -1,9 +1,11 @@
 import { Asset } from "@stellar/stellar-sdk";
 import { getHorizonServer } from "@/lib/horizon-client";
+import { fetchMidPrice } from "@/lib/order-book";
 import type {
   AssetRef,
   AssetType,
   FindPathsInput,
+  Network,
   Path,
 } from "@/types/path";
 
@@ -85,4 +87,39 @@ export async function findPaths(input: FindPathsInput): Promise<Path[]> {
   const page = await builder.call();
   const records = page.records as unknown as HorizonPathRecord[];
   return records.map(normalize);
+}
+
+/**
+ * Resolves the mid-price for every consecutive hop in a single route
+ * (source -> hop1, ..., hopN -> destination). Requests run in parallel, and a
+ * failed order book lookup degrades to "N/A" so one bad hop never sinks the rest.
+ */
+async function fetchHopRates(network: Network, path: Path): Promise<string[]> {
+  const chain: AssetRef[] = [path.source, ...path.hops, path.destination];
+  const pairs = chain
+    .slice(1)
+    .map((buying, i) => [chain[i], buying] as const);
+
+  return Promise.all(
+    pairs.map(([selling, buying]) =>
+      fetchMidPrice(network, selling, buying).catch(() => "N/A"),
+    ),
+  );
+}
+
+/**
+ * Enriches each path with its per-hop mid-prices. Intended to run after
+ * findPaths resolves so the initial results render without waiting on the
+ * order book queries. Every path is processed concurrently.
+ */
+export async function attachHopRates(
+  network: Network,
+  paths: Path[],
+): Promise<Path[]> {
+  return Promise.all(
+    paths.map(async (path) => ({
+      ...path,
+      hopRates: await fetchHopRates(network, path),
+    })),
+  );
 }

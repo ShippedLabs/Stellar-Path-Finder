@@ -11,6 +11,7 @@ import {
   saveCustomAssets,
   type CustomAssetMap,
 } from "@/lib/custom-assets";
+import { savePair } from "@/lib/saved-pairs";
 import { assetKey } from "@/types/path";
 import type { AssetRef, Direction, FindPathsInput } from "@/types/path";
 
@@ -45,6 +46,7 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     useState<CustomAssetMap>(EMPTY_CUSTOM_ASSETS);
 
   const customAssets = customByNetwork[network];
+  const [saveNotification, setSaveNotification] = useState<string | null>(null);
 
   useEffect(() => {
     setCustomByNetwork(loadCustomAssets());
@@ -80,6 +82,13 @@ export function PathForm({ onSubmit, loading = false }: Props) {
   const validAmount = Number.isFinite(numericAmount) && numericAmount > 0;
   const canSubmit = !sameAsset && validAmount && !loading;
 
+  const handleSavePair = useCallback(() => {
+    if (!canSubmit) return;
+    savePair({ network, direction, source, destination, amount });
+    setSaveNotification("Pair saved!");
+    setTimeout(() => setSaveNotification(null), 2000);
+  }, [network, direction, source, destination, amount, canSubmit]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -89,11 +98,34 @@ export function PathForm({ onSubmit, loading = false }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-medium text-slate-100">Find a route</h2>
-        <NetworkToggle />
+        <h2 className="text-lg font-semibold text-slate-100">Find a route</h2>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSavePair}
+            disabled={!canSubmit}
+            title="Save this pair"
+            className="relative inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M5 2h14c1.1 0 2 .9 2 2v16l-7-3-7 3V4c0-1.1.9-2 2-2z" />
+            </svg>
+            {saveNotification && (
+              <span className="absolute -top-8 whitespace-nowrap rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white">
+                {saveNotification}
+              </span>
+            )}
+          </button>
+          <NetworkToggle />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <AssetSelector
           id="source-asset"
           label="From"
@@ -114,10 +146,10 @@ export function PathForm({ onSubmit, loading = false }: Props) {
         />
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <label
           htmlFor="amount"
-          className="text-xs font-medium uppercase tracking-wider text-slate-400"
+          className="text-sm font-semibold uppercase tracking-wider text-slate-300"
         >
           {direction === "strict-send" ? "Send amount" : "Receive amount"}
         </label>
@@ -130,25 +162,38 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="0.00"
-          className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-600 transition-colors focus:border-emerald-500 focus:outline-none"
+          // Accessibility: Indicate invalid state when same assets selected
+          aria-invalid={sameAsset}
+          aria-describedby={sameAsset ? "same-asset-error" : undefined}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
+        {/* Accessibility: Render error directly associated with input */}
+        {sameAsset ? (
+          <p
+            id="same-asset-error"
+            className="text-sm font-medium text-amber-300"
+            aria-live="polite"
+          >
+            Source and destination assets must differ.
+          </p>
+        ) : null}
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="text-xs font-medium uppercase tracking-wider text-slate-400">
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-semibold uppercase tracking-wider text-slate-300">
           Direction
         </legend>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {DIRECTIONS.map((option) => {
             const checked = direction === option.value;
             return (
               <label
                 key={option.value}
                 className={
-                  "flex cursor-pointer flex-col gap-0.5 rounded-lg border px-3 py-2.5 transition-colors " +
+                  "flex cursor-pointer flex-col gap-1 rounded-lg border px-4 py-3 transition-colors focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 " +
                   (checked
-                    ? "border-emerald-500 bg-emerald-500/5"
-                    : "border-slate-800 bg-slate-900 hover:border-slate-700")
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-slate-700 bg-slate-900 hover:border-slate-600")
                 }
               >
                 <input
@@ -157,28 +202,25 @@ export function PathForm({ onSubmit, loading = false }: Props) {
                   value={option.value}
                   checked={checked}
                   onChange={() => setDirection(option.value)}
+                  // Accessibility: Keep interactive element available for focus visually hidden
                   className="sr-only"
                 />
-                <span className="text-sm font-medium text-slate-100">
+                <span className="text-sm font-semibold text-slate-100">
                   {option.label}
                 </span>
-                <span className="text-xs text-slate-500">{option.hint}</span>
+                <span className="text-xs font-medium text-slate-400">
+                  {option.hint}
+                </span>
               </label>
             );
           })}
         </div>
       </fieldset>
 
-      {sameAsset ? (
-        <p className="text-xs text-amber-400">
-          Source and destination assets must differ.
-        </p>
-      ) : null}
-
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+        className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900"
       >
         {loading ? "Searching…" : "Find paths"}
       </button>

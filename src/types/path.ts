@@ -17,6 +17,13 @@ export interface Path {
   destinationAmount: string;
   hops: AssetRef[];
   rate: string;
+  /**
+   * Mid-price for each consecutive hop in the route
+   * (source -> hop1, ..., hopN -> destination). Populated asynchronously
+   * after the path search completes; "N/A" marks a hop whose order book
+   * could not be fetched. Optional so existing callers remain unaffected.
+   */
+  hopRates?: string[];
 }
 
 export interface FindPathsInput {
