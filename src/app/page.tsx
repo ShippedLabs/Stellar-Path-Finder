@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { NoRoutesEmptyState } from "@/components/no-routes-empty-state";
 import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
@@ -78,11 +79,7 @@ export default function HomePage() {
           ) : null}
 
           {hasSearched && !error && paths.length === 0 ? (
-            <section className="mt-6 rounded-xl border border-slate-700 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm font-medium text-slate-300">
-                No routes found between these assets at this amount.
-              </p>
-            </section>
+            <NoRoutesEmptyState input={lastInput} />
           ) : null}
 
           {paths.length > 0 ? (
