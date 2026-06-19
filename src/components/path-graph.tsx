@@ -1,6 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { StrKey } from "@stellar/stellar-sdk";
 import ReactFlow, {
   Background,
   Controls,
@@ -12,8 +20,9 @@ import ReactFlow, {
   type NodeTypes,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { buildXdr } from "@/lib/xdr-builder";
 import { assetKey, assetLabel } from "@/types/path";
-import type { AssetRef, Path } from "@/types/path";
+import type { AssetRef, Direction, Network, Path } from "@/types/path";
 
 type NodeRole = "source" | "hop" | "destination";
 
@@ -69,6 +78,8 @@ function formatRate(rate: string): string {
 
 interface Props {
   path: Path;
+  direction: Direction;
+  network: Network;
   height?: number;
 }
 
@@ -111,33 +122,110 @@ function buildGraph(path: Path): { nodes: Node<NodeData>[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
-export function PathGraph({ path, height = 240 }: Props) {
+export function PathGraph({ path, direction, network, height = 240 }: Props) {
   const { nodes, edges } = useMemo(() => buildGraph(path), [path]);
+  const accountId = useId();
+  const [account, setAccount] = useState("");
+
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const trimmedAccount = account.trim();
+  const accountValid = StrKey.isValidEd25519PublicKey(trimmedAccount);
+  const showAccountError = trimmedAccount.length > 0 && !accountValid;
+
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
+
+  const handleCopy = useCallback(async () => {
+    if (!accountValid) return;
+    clearTimeout(resetTimer.current);
+    try {
+      const xdr = buildXdr(path, direction, trimmedAccount, network);
+      await navigator.clipboard.writeText(xdr);
+      setStatus("copied");
+    } catch {
+      setStatus("error");
+    }
+    resetTimer.current = setTimeout(() => setStatus("idle"), 2000);
+  }, [accountValid, path, direction, trimmedAccount, network]);
+
+  const buttonLabel =
+    status === "copied"
+      ? "Copied!"
+      : status === "error"
+        ? "Failed"
+        : "Copy XDR";
 
   return (
-    <div
-      className="w-full rounded-xl border border-slate-800 bg-slate-950"
-      style={{ height }}
-    >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        panOnDrag
-        zoomOnScroll={false}
-        zoomOnPinch
+    <div className="space-y-4">
+      <div
+        className="w-full rounded-xl border border-slate-800 bg-slate-950"
+        style={{ height }}
       >
-        <Background color="#1e293b" gap={20} />
-        <Controls
-          showInteractive={false}
-          className="!border-slate-800 !bg-slate-900"
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          panOnDrag
+          zoomOnScroll={false}
+          zoomOnPinch
+        >
+          <Background color="#1e293b" gap={20} />
+          <Controls
+            showInteractive={false}
+            className="!border-slate-800 !bg-slate-900"
+          />
+        </ReactFlow>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={accountId}
+          className="text-xs font-medium uppercase tracking-wider text-slate-400"
+        >
+          Source account
+        </label>
+        <input
+          id={accountId}
+          type="text"
+          value={account}
+          onChange={(event) => setAccount(event.target.value)}
+          placeholder="G…"
+          spellCheck={false}
+          autoCapitalize="off"
+          aria-invalid={showAccountError}
+          className={
+            "rounded-lg border bg-slate-900 px-3 py-2 font-mono text-xs text-slate-100 placeholder-slate-600 transition-colors focus:outline-none " +
+            (showAccountError
+              ? "border-rose-700 focus:border-rose-500"
+              : "border-slate-800 focus:border-emerald-500")
+          }
         />
-      </ReactFlow>
+        {showAccountError ? (
+          <p className="text-xs text-rose-400">
+            Enter a valid Stellar account address starting with G.
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={!accountValid}
+          aria-live="polite"
+          className={
+            "mt-1 self-start rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 " +
+            (status === "error"
+              ? "bg-rose-500 text-slate-950 hover:bg-rose-400"
+              : "bg-emerald-500 text-slate-950 hover:bg-emerald-400")
+          }
+        >
+          {buttonLabel}
+        </button>
+      </div>
     </div>
   );
 }

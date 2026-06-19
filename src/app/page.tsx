@@ -11,7 +11,8 @@ import { usePaths } from "@/hooks/use-paths";
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, search, reset } = usePaths();
+  const { paths, loading, error, hasSearched, lastInput, search, reset } =
+    usePaths();
   const lastNetwork = useRef(network);
 
   // Accessibility: State for ARIA live region announcements
@@ -92,7 +93,11 @@ export default function HomePage() {
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
                   a row to inspect the route
                 </p>
-                <PathList paths={paths} />
+                <PathList
+                  paths={paths}
+                  direction={lastInput?.direction ?? "strict-send"}
+                  network={lastInput?.network ?? "mainnet"}
+                />
               </section>
             </div>
           ) : null}

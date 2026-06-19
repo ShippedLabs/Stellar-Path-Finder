@@ -3,13 +3,15 @@
 import { Fragment, useMemo, useState, useRef } from "react";
 import { PathGraph } from "@/components/path-graph";
 import { assetKey, assetLabel } from "@/types/path";
-import type { Path } from "@/types/path";
+import type { Direction, Network, Path } from "@/types/path";
 
 type SortKey = "rate" | "send" | "receive" | "hops";
 type SortDir = "asc" | "desc";
 
 interface Props {
   paths: Path[];
+  direction: Direction;
+  network: Network;
 }
 
 const COLUMNS: {
@@ -58,7 +60,7 @@ function pathId(path: Path): string {
   ].join("|");
 }
 
-export function PathList({ paths }: Props) {
+export function PathList({ paths, direction, network }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -230,7 +232,11 @@ export function PathList({ paths }: Props) {
                     className="bg-slate-950 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-400"
                   >
                     <td colSpan={COLUMNS.length} className="px-4 py-4">
-                      <PathGraph path={path} />
+                      <PathGraph
+                        path={path}
+                        direction={direction}
+                        network={network}
+                      />
                     </td>
                   </tr>
                 ) : null}
