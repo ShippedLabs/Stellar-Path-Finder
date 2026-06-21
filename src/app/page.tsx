@@ -1,30 +1,125 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NoRoutesEmptyState } from "@/components/no-routes-empty-state";
 import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
 import { PathList } from "@/components/path-list";
 import { ResultsSkeleton } from "@/components/results-skeleton";
 import { SavedPairsChips } from "@/components/saved-pairs-chips";
+import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
+import { pathChainKey } from "@/types/path";
+import type { RateChange } from "@/types/path";
+
+// Re-fetch interval for live polling, in milliseconds.
+const LIVE_POLL_MS = 15_000;
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, lastInput, search, reset } =
+  const { paths, loading, error, hasSearched, lastInput, search, refetch, reset } =
     usePaths();
   const lastNetwork = useRef(network);
 
   // Accessibility: State for ARIA live region announcements
   const [announcement, setAnnouncement] = useState("");
 
+  // Live polling: re-run the last search on an interval and highlight how each
+  // route's rate has moved since the previous fetch.
+  const [live, setLive] = useState(false);
+  const [rateChanges, setRateChanges] = useState<Map<string, RateChange>>(
+    () => new Map(),
+  );
+  // Previous fetch's rate per route (keyed by asset chain). A ref so updating
+  // the baseline never triggers a re-render.
+  const prevRatesRef = useRef<Map<string, number>>(new Map());
+
+  // A poll re-fetch keeps the existing results on screen (only the initial /
+  // empty load shows the skeleton).
+  const isPolling = live && paths.length > 0;
+
   useEffect(() => {
     if (lastNetwork.current === network) return;
     lastNetwork.current = network;
     reset();
+    setLive(false);
+    prevRatesRef.current = new Map();
+    setRateChanges(new Map());
     setAnnouncement(""); // clear on network reset
   }, [network, reset]);
+
+  // A new search target invalidates the polling baseline so stale indicators
+  // never carry over. Polling re-fetches reuse the same lastInput reference, so
+  // this only fires on a genuinely new search — not on each poll.
+  useEffect(() => {
+    prevRatesRef.current = new Map();
+    setRateChanges(new Map());
+  }, [lastInput]);
+
+  // Stop polling if a fetch fails, rather than hammering a failing endpoint.
+  useEffect(() => {
+    if (error) setLive(false);
+  }, [error]);
+
+  // Drive the polling loop. Passing `null` while inactive clears the interval;
+  // the guard plus the disabled toggle prevent overlapping requests, and the
+  // hook clears the timer on unmount.
+  useInterval(
+    () => {
+      if (!loading) void refetch();
+    },
+    live ? LIVE_POLL_MS : null,
+  );
+
+  // After each fetch, compare the new rate of every route against the baseline.
+  useEffect(() => {
+    if (!live) return;
+
+    const current = new Map<string, number>();
+    for (const path of paths) current.set(pathChainKey(path), Number(path.rate));
+
+    const prev = prevRatesRef.current;
+    if (prev.size === 0) {
+      // First fetch since polling started: establish the baseline silently.
+      prevRatesRef.current = current;
+      return;
+    }
+
+    let moved = false;
+    const next = new Map<string, RateChange>();
+    for (const [key, rate] of current) {
+      const before = prev.get(key);
+      if (before === undefined) continue;
+      if (rate > before) {
+        next.set(key, "up");
+        moved = true;
+      } else if (rate < before) {
+        next.set(key, "down");
+        moved = true;
+      } else {
+        next.set(key, "same");
+      }
+    }
+
+    // Ignore re-renders where no rate actually changed (e.g. background hop-rate
+    // enrichment) so a freshly shown indicator is not wiped a moment later.
+    if (!moved) return;
+    prevRatesRef.current = current;
+    setRateChanges(next);
+  }, [paths, live]);
+
+  const toggleLive = useCallback(() => {
+    setLive((on) => {
+      const next = !on;
+      if (!next) {
+        // Turning off: stop tracking and clear indicators immediately.
+        prevRatesRef.current = new Map();
+        setRateChanges(new Map());
+      }
+      return next;
+    });
+  }, []);
 
   // Accessibility: Update announcement when search resolves
   useEffect(() => {
@@ -67,7 +162,7 @@ export default function HomePage() {
         <PathForm onSubmit={search} loading={loading} />
       </section>
 
-      {loading ? (
+      {loading && !isPolling ? (
         <ResultsSkeleton />
       ) : (
         <>
@@ -84,7 +179,40 @@ export default function HomePage() {
 
           {paths.length > 0 ? (
             <div className="mt-8 space-y-8">
-              <PathComparison paths={paths} />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Rates update with order book activity
+                </p>
+                <button
+                  type="button"
+                  onClick={toggleLive}
+                  disabled={loading}
+                  aria-pressed={live}
+                  aria-label={
+                    live ? "Turn off live rate updates" : "Turn on live rate updates"
+                  }
+                  className={
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50 " +
+                    (live
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
+                      : "border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-600")
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className={
+                      "inline-block h-2 w-2 rounded-full " +
+                      (live
+                        ? loading
+                          ? "animate-pulse bg-emerald-400"
+                          : "bg-emerald-400"
+                        : "bg-slate-500")
+                    }
+                  />
+                  {live ? (loading ? "Updating…" : "Live") : "Go live"}
+                </button>
+              </div>
+              <PathComparison paths={paths} rateChanges={rateChanges} />
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
@@ -94,6 +222,7 @@ export default function HomePage() {
                   paths={paths}
                   direction={lastInput?.direction ?? "strict-send"}
                   network={lastInput?.network ?? "mainnet"}
+                  rateChanges={rateChanges}
                 />
               </section>
             </div>

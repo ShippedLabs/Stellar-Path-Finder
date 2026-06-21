@@ -11,6 +11,7 @@ interface UsePathsResult {
   hasSearched: boolean;
   lastInput: FindPathsInput | null;
   search: (input: FindPathsInput) => Promise<void>;
+  refetch: () => Promise<void>;
   reset: () => void;
 }
 
@@ -27,6 +28,9 @@ export function usePaths(): UsePathsResult {
   const [hasSearched, setHasSearched] = useState(false);
   const [lastInput, setLastInput] = useState<FindPathsInput | null>(null);
   const requestId = useRef(0);
+  // Mirrors lastInput so refetch can re-run the latest search without being
+  // recreated on every input change (keeps the polling callback stable).
+  const lastInputRef = useRef<FindPathsInput | null>(null);
 
   const search = useCallback(async (input: FindPathsInput) => {
     const id = ++requestId.current;
@@ -34,6 +38,7 @@ export function usePaths(): UsePathsResult {
     setError(null);
     setHasSearched(true);
     setLastInput(input);
+    lastInputRef.current = input;
     try {
       const results = await findPaths(input);
       if (id !== requestId.current) return;
@@ -57,6 +62,14 @@ export function usePaths(): UsePathsResult {
     }
   }, []);
 
+  // Re-run the most recent search. Goes through `search`, so it shares the same
+  // requestId race-condition guard as a manual search.
+  const refetch = useCallback(() => {
+    const input = lastInputRef.current;
+    if (!input) return Promise.resolve();
+    return search(input);
+  }, [search]);
+
   const reset = useCallback(() => {
     requestId.current += 1;
     setPaths([]);
@@ -64,7 +77,8 @@ export function usePaths(): UsePathsResult {
     setLoading(false);
     setHasSearched(false);
     setLastInput(null);
+    lastInputRef.current = null;
   }, []);
 
-  return { paths, loading, error, hasSearched, lastInput, search, reset };
+  return { paths, loading, error, hasSearched, lastInput, search, refetch, reset };
 }
