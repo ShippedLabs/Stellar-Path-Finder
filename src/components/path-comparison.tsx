@@ -2,14 +2,17 @@
 
 import { useMemo } from "react";
 import { PathCard } from "@/components/path-card";
-import type { Path } from "@/types/path";
+import { pathChainKey } from "@/types/path";
+import type { Path, RateChange } from "@/types/path";
 
 interface Props {
   paths: Path[];
   limit?: number;
+  /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
+  rateChanges?: Map<string, RateChange>;
 }
 
-export function PathComparison({ paths, limit = 3 }: Props) {
+export function PathComparison({ paths, limit = 3, rateChanges }: Props) {
   const top = useMemo(() => {
     return [...paths]
       .sort((a, b) => Number(b.rate) - Number(a.rate))
@@ -28,7 +31,12 @@ export function PathComparison({ paths, limit = 3 }: Props) {
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         {top.map((path, i) => (
-          <PathCard key={i} path={path} rank={i + 1} />
+          <PathCard
+            key={i}
+            path={path}
+            rank={i + 1}
+            rateChange={rateChanges?.get(pathChainKey(path))}
+          />
         ))}
       </div>
     </section>

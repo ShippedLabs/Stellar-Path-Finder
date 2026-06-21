@@ -34,8 +34,29 @@ export interface FindPathsInput {
   amount: string;
 }
 
+/**
+ * Direction a path's rate has moved between two live-polling fetches.
+ * `undefined` (no prop) means "not tracking" and renders no indicator.
+ */
+export type RateChange = "up" | "down" | "same";
+
 export function assetKey(asset: AssetRef): string {
   return asset.type === "native" ? "native" : `${asset.code}:${asset.issuer ?? ""}`;
+}
+
+/**
+ * Stable identity for a route based purely on its asset chain
+ * (source -> hops -> destination), independent of amounts or rate. Used to
+ * match the same route across live-polling fetches so rate changes can be
+ * compared. Amounts are intentionally excluded because they fluctuate with
+ * the order book on every re-fetch.
+ */
+export function pathChainKey(path: Path): string {
+  return [
+    assetKey(path.source),
+    ...path.hops.map(assetKey),
+    assetKey(path.destination),
+  ].join(">");
 }
 
 export function assetLabel(asset: AssetRef): string {

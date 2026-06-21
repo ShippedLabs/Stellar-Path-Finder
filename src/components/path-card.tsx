@@ -1,13 +1,15 @@
 "use client";
 
+import { RateChangeIndicator } from "@/components/rate-change-indicator";
 import { assetLabel } from "@/types/path";
-import type { Path } from "@/types/path";
+import type { Path, RateChange } from "@/types/path";
 
 interface Props {
   path: Path;
   selected?: boolean;
   onClick?: () => void;
   rank?: number;
+  rateChange?: RateChange;
 }
 
 function formatAmount(value: string): string {
@@ -26,7 +28,13 @@ function hopBadge(hops: number): string {
   return `${hops} hops`;
 }
 
-export function PathCard({ path, selected = false, onClick, rank }: Props) {
+export function PathCard({
+  path,
+  selected = false,
+  onClick,
+  rank,
+  rateChange,
+}: Props) {
   const interactive = typeof onClick === "function";
   const Tag = interactive ? "button" : "div";
   const sourceLabel = assetLabel(path.source);
@@ -67,7 +75,10 @@ export function PathCard({ path, selected = false, onClick, rank }: Props) {
         </div>
       </div>
 
-      <p className="text-base font-semibold text-emerald-300">{rateLabel}</p>
+      <p className="flex items-center gap-1.5 text-base font-semibold text-emerald-300">
+        <span>{rateLabel}</span>
+        <RateChangeIndicator change={rateChange} />
+      </p>
 
       <dl className="grid grid-cols-2 gap-3 text-xs">
         <div>

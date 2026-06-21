@@ -2,8 +2,9 @@
 
 import { Fragment, useMemo, useState, useRef } from "react";
 import { PathGraph } from "@/components/path-graph";
-import { assetKey, assetLabel } from "@/types/path";
-import type { Direction, Network, Path } from "@/types/path";
+import { RateChangeIndicator } from "@/components/rate-change-indicator";
+import { assetKey, assetLabel, pathChainKey } from "@/types/path";
+import type { Direction, Network, Path, RateChange } from "@/types/path";
 
 type SortKey = "rate" | "send" | "receive" | "hops";
 type SortDir = "asc" | "desc";
@@ -12,6 +13,8 @@ interface Props {
   paths: Path[];
   direction: Direction;
   network: Network;
+  /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
+  rateChanges?: Map<string, RateChange>;
 }
 
 const COLUMNS: {
@@ -60,7 +63,7 @@ function pathId(path: Path): string {
   ].join("|");
 }
 
-export function PathList({ paths, direction, network }: Props) {
+export function PathList({ paths, direction, network, rateChanges }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -217,7 +220,12 @@ export function PathList({ paths, direction, network }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-medium text-emerald-300">
-                    {formatAmount(path.rate)}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{formatAmount(path.rate)}</span>
+                      <RateChangeIndicator
+                        change={rateChanges?.get(pathChainKey(path))}
+                      />
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-slate-300">
                     {path.hops.length}
