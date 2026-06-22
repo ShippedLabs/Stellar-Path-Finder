@@ -50,6 +50,11 @@ export interface FindPathsInput {
   amount: string;
 }
 
+export interface RateHistoryPoint {
+  timestamp: number;
+  close: string;
+}
+
 /**
  * Direction a path's rate has moved between two live-polling fetches.
  * `undefined` (no prop) means "not tracking" and renders no indicator.
