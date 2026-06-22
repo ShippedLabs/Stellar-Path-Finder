@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { NoRoutesEmptyState } from "@/components/no-routes-empty-state";
 import { PathComparison } from "@/components/path-comparison";
 import { PathForm } from "@/components/path-form";
@@ -10,11 +11,28 @@ import { SavedPairsChips } from "@/components/saved-pairs-chips";
 import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
+import { fetchRateHistory } from "@/lib/trade-aggregations";
 import { pathChainKey } from "@/types/path";
-import type { RateChange } from "@/types/path";
+import type { RateChange, RateHistoryPoint } from "@/types/path";
 
 // Re-fetch interval for live polling, in milliseconds.
 const LIVE_POLL_MS = 15_000;
+const DAILY_AGGREGATION_MS = 24 * 60 * 60 * 1000;
+
+const RateChart = dynamic(
+  () => import("@/components/rate-chart").then((mod) => mod.RateChart),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="rounded-xl border border-slate-700 bg-slate-900/40 p-4 sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Historical rate
+        </p>
+        <div className="mt-4 h-56 animate-pulse rounded-lg bg-slate-800/70" />
+      </section>
+    ),
+  },
+);
 
 export default function HomePage() {
   const { network } = useNetwork();
@@ -31,6 +49,8 @@ export default function HomePage() {
   const [rateChanges, setRateChanges] = useState<Map<string, RateChange>>(
     () => new Map(),
   );
+  const [rateHistory, setRateHistory] = useState<RateHistoryPoint[]>([]);
+  const [rateHistoryLoading, setRateHistoryLoading] = useState(false);
   // Previous fetch's rate per route (keyed by asset chain). A ref so updating
   // the baseline never triggers a re-render.
   const prevRatesRef = useRef<Map<string, number>>(new Map());
@@ -46,6 +66,8 @@ export default function HomePage() {
     setLive(false);
     prevRatesRef.current = new Map();
     setRateChanges(new Map());
+    setRateHistory([]);
+    setRateHistoryLoading(false);
     setAnnouncement(""); // clear on network reset
   }, [network, reset]);
 
@@ -61,6 +83,36 @@ export default function HomePage() {
   useEffect(() => {
     if (error) setLive(false);
   }, [error]);
+
+  useEffect(() => {
+    if (!lastInput || error || paths.length === 0 || loading) {
+      setRateHistory([]);
+      setRateHistoryLoading(false);
+      return;
+    }
+
+    let active = true;
+    setRateHistoryLoading(true);
+    void fetchRateHistory(
+      lastInput.network,
+      lastInput.source,
+      lastInput.destination,
+      DAILY_AGGREGATION_MS,
+    )
+      .then((history) => {
+        if (active) setRateHistory(history);
+      })
+      .catch(() => {
+        if (active) setRateHistory([]);
+      })
+      .finally(() => {
+        if (active) setRateHistoryLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [lastInput, paths.length, loading, error]);
 
   // Drive the polling loop. Passing `null` while inactive clears the interval;
   // the guard plus the disabled toggle prevent overlapping requests, and the
@@ -213,6 +265,9 @@ export default function HomePage() {
                 </button>
               </div>
               <PathComparison paths={paths} rateChanges={rateChanges} />
+              {!loading ? (
+                <RateChart data={rateHistory} loading={rateHistoryLoading} />
+              ) : null}
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
