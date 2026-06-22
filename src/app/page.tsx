@@ -10,6 +10,7 @@ import { SavedPairsChips } from "@/components/saved-pairs-chips";
 import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
+import { checkHorizonHealth } from "@/lib/network-health";
 import { pathChainKey } from "@/types/path";
 import type { RateChange } from "@/types/path";
 
@@ -24,6 +25,10 @@ export default function HomePage() {
 
   // Accessibility: State for ARIA live region announcements
   const [announcement, setAnnouncement] = useState("");
+  const [horizonHealth, setHorizonHealth] = useState<"ok" | "degraded" | null>(
+    null,
+  );
+  const [healthDismissed, setHealthDismissed] = useState(false);
 
   // Live polling: re-run the last search on an interval and highlight how each
   // route's rate has moved since the previous fetch.
@@ -44,10 +49,26 @@ export default function HomePage() {
     lastNetwork.current = network;
     reset();
     setLive(false);
+    setHorizonHealth(null);
+    setHealthDismissed(false);
     prevRatesRef.current = new Map();
     setRateChanges(new Map());
     setAnnouncement(""); // clear on network reset
   }, [network, reset]);
+
+  useEffect(() => {
+    let active = true;
+    setHorizonHealth(null);
+    setHealthDismissed(false);
+
+    checkHorizonHealth(network).then((result) => {
+      if (active) setHorizonHealth(result);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [network]);
 
   // A new search target invalidates the polling baseline so stale indicators
   // never carry over. Polling re-fetches reuse the same lastInput reference, so
@@ -158,6 +179,28 @@ export default function HomePage() {
       </header>
 
       <section className="mt-8 rounded-xl border border-slate-700 bg-slate-900/40 p-5 sm:mt-12 sm:p-8">
+        {horizonHealth === "degraded" && !healthDismissed ? (
+          <div
+            role="status"
+            className="mb-5 flex flex-col gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <div>
+              <p className="font-semibold text-amber-200">
+                Horizon may be experiencing delays
+              </p>
+              <p className="mt-1 text-amber-100/90">
+                Results could be slower than usual. Searches remain available.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHealthDismissed(true)}
+              className="self-start rounded-md border border-amber-300/40 px-3 py-1 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-300/10 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-2 focus:ring-offset-slate-900"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
         <SavedPairsChips network={network} onSelectPair={search} />
         <PathForm onSubmit={search} loading={loading} />
       </section>
