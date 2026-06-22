@@ -89,6 +89,11 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     setTimeout(() => setSaveNotification(null), 2000);
   }, [network, direction, source, destination, amount, canSubmit]);
 
+  const handleSwapAssets = useCallback(() => {
+    setSource(destination);
+    setDestination(source);
+  }, [source, destination]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -125,7 +130,7 @@ export function PathForm({ onSubmit, loading = false }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
         <AssetSelector
           id="source-asset"
           label="From"
@@ -135,6 +140,29 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           customAssets={customAssets}
           onAddCustom={addCustomAsset}
         />
+        <button
+          type="button"
+          onClick={handleSwapAssets}
+          aria-label="Swap source and destination"
+          title="Swap source and destination"
+          className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-300 transition-colors hover:border-emerald-500 hover:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 md:mb-1"
+        >
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="M7 7h11" />
+            <path d="m15 3 4 4-4 4" />
+            <path d="M17 17H6" />
+            <path d="m9 13-4 4 4 4" />
+          </svg>
+        </button>
         <AssetSelector
           id="destination-asset"
           label="To"
