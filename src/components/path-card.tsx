@@ -1,7 +1,7 @@
 "use client";
 
 import { RateChangeIndicator } from "@/components/rate-change-indicator";
-import { assetLabel } from "@/types/path";
+import { assetKey, assetLabel } from "@/types/path";
 import type { Path, RateChange } from "@/types/path";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   selected?: boolean;
   onClick?: () => void;
   rank?: number;
+  usdPrices?: Record<string, number>;
   rateChange?: RateChange;
 }
 
@@ -28,11 +29,23 @@ function hopBadge(hops: number): string {
   return `${hops} hops`;
 }
 
+function formatUsdEstimate(amount: string, price: number | undefined): string | null {
+  if (price === undefined) return null;
+  const value = Number(amount) * price;
+  if (!Number.isFinite(value)) return null;
+  if (value < 0.01 && value > 0) return "~$<0.01";
+  return `~$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export function PathCard({
   path,
   selected = false,
   onClick,
   rank,
+  usdPrices,
   rateChange,
 }: Props) {
   const interactive = typeof onClick === "function";
@@ -43,6 +56,14 @@ export function PathCard({
   const rateLabel = Number.isFinite(rate)
     ? `1 ${sourceLabel} ≈ ${formatAmount(path.rate)} ${destLabel}`
     : `${sourceLabel} → ${destLabel}`;
+  const sourceUsd = formatUsdEstimate(
+    path.sourceAmount,
+    usdPrices?.[assetKey(path.source)],
+  );
+  const destinationUsd = formatUsdEstimate(
+    path.destinationAmount,
+    usdPrices?.[assetKey(path.destination)],
+  );
 
   return (
     <Tag
@@ -86,12 +107,18 @@ export function PathCard({
           <dd className="mt-0.5 font-medium text-slate-200">
             {formatAmount(path.sourceAmount)} {sourceLabel}
           </dd>
+          {sourceUsd ? (
+            <dd className="mt-0.5 text-slate-500">{sourceUsd}</dd>
+          ) : null}
         </div>
         <div>
           <dt className="text-slate-500">Receive</dt>
           <dd className="mt-0.5 font-medium text-slate-200">
             {formatAmount(path.destinationAmount)} {destLabel}
           </dd>
+          {destinationUsd ? (
+            <dd className="mt-0.5 text-slate-500">{destinationUsd}</dd>
+          ) : null}
         </div>
       </dl>
     </Tag>

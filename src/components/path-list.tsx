@@ -13,6 +13,7 @@ interface Props {
   paths: Path[];
   direction: Direction;
   network: Network;
+  usdPrices?: Record<string, number>;
   /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
   rateChanges?: Map<string, RateChange>;
 }
@@ -53,6 +54,42 @@ function formatAmount(value: string): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function formatUsdEstimate(amount: string, price: number | undefined): string | null {
+  if (price === undefined) return null;
+  const value = Number(amount) * price;
+  if (!Number.isFinite(value)) return null;
+  if (value < 0.01 && value > 0) return "~$<0.01";
+  return `~$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function AmountCell({
+  amount,
+  asset,
+  usdPrices,
+}: {
+  amount: string;
+  asset: Path["source"];
+  usdPrices?: Record<string, number>;
+}) {
+  const usdEstimate = formatUsdEstimate(amount, usdPrices?.[assetKey(asset)]);
+  return (
+    <div>
+      <div>
+        {formatAmount(amount)}{" "}
+        <span className="text-slate-400">{assetLabel(asset)}</span>
+      </div>
+      {usdEstimate ? (
+        <div className="mt-0.5 text-xs font-normal text-slate-500">
+          {usdEstimate}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function pathId(path: Path): string {
   return [
     assetKey(path.source),
@@ -63,7 +100,13 @@ function pathId(path: Path): string {
   ].join("|");
 }
 
-export function PathList({ paths, direction, network, rateChanges }: Props) {
+export function PathList({
+  paths,
+  direction,
+  network,
+  usdPrices,
+  rateChanges,
+}: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -208,16 +251,18 @@ export function PathList({ paths, direction, network, rateChanges }: Props) {
                     {assetLabel(path.destination)}
                   </td>
                   <td className="hidden px-4 py-3 text-slate-200 sm:table-cell">
-                    {formatAmount(path.sourceAmount)}{" "}
-                    <span className="text-slate-400">
-                      {assetLabel(path.source)}
-                    </span>
+                    <AmountCell
+                      amount={path.sourceAmount}
+                      asset={path.source}
+                      usdPrices={usdPrices}
+                    />
                   </td>
                   <td className="hidden px-4 py-3 text-slate-200 sm:table-cell">
-                    {formatAmount(path.destinationAmount)}{" "}
-                    <span className="text-slate-400">
-                      {assetLabel(path.destination)}
-                    </span>
+                    <AmountCell
+                      amount={path.destinationAmount}
+                      asset={path.destination}
+                      usdPrices={usdPrices}
+                    />
                   </td>
                   <td className="px-4 py-3 font-medium text-emerald-300">
                     <span className="inline-flex items-center gap-1.5">

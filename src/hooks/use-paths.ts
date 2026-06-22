@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { fetchUsdPricesForPaths } from "@/lib/usd-price";
 import { attachHopRates, findPaths } from "@/lib/path-finder";
 import type { FindPathsInput, Path } from "@/types/path";
 
@@ -10,6 +11,7 @@ interface UsePathsResult {
   error: string | null;
   hasSearched: boolean;
   lastInput: FindPathsInput | null;
+  usdPrices: Record<string, number>;
   search: (input: FindPathsInput) => Promise<void>;
   refetch: () => Promise<void>;
   reset: () => void;
@@ -27,7 +29,9 @@ export function usePaths(): UsePathsResult {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastInput, setLastInput] = useState<FindPathsInput | null>(null);
+  const [usdPrices, setUsdPrices] = useState<Record<string, number>>({});
   const requestId = useRef(0);
+  const usdPriceCacheRef = useRef(new Map<string, number | null>());
   // Mirrors lastInput so refetch can re-run the latest search without being
   // recreated on every input change (keeps the polling callback stable).
   const lastInputRef = useRef<FindPathsInput | null>(null);
@@ -43,6 +47,15 @@ export function usePaths(): UsePathsResult {
       const results = await findPaths(input);
       if (id !== requestId.current) return;
       setPaths(results);
+      setUsdPrices({});
+
+      void fetchUsdPricesForPaths(input.network, results, usdPriceCacheRef.current)
+        .then((prices) => {
+          if (id === requestId.current) setUsdPrices(prices);
+        })
+        .catch(() => {
+          /* keep paths without USD estimates */
+        });
 
       // Enrich with per-hop rates in the background so the initial results
       // render immediately. A late or failed enrichment leaves base paths intact.
@@ -57,6 +70,7 @@ export function usePaths(): UsePathsResult {
       if (id !== requestId.current) return;
       setError(describeError(err));
       setPaths([]);
+      setUsdPrices({});
     } finally {
       if (id === requestId.current) setLoading(false);
     }
@@ -73,6 +87,7 @@ export function usePaths(): UsePathsResult {
   const reset = useCallback(() => {
     requestId.current += 1;
     setPaths([]);
+    setUsdPrices({});
     setError(null);
     setLoading(false);
     setHasSearched(false);
@@ -80,5 +95,15 @@ export function usePaths(): UsePathsResult {
     lastInputRef.current = null;
   }, []);
 
-  return { paths, loading, error, hasSearched, lastInput, search, refetch, reset };
+  return {
+    paths,
+    loading,
+    error,
+    hasSearched,
+    lastInput,
+    usdPrices,
+    search,
+    refetch,
+    reset,
+  };
 }

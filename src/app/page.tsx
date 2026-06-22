@@ -18,8 +18,17 @@ const LIVE_POLL_MS = 15_000;
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, lastInput, search, refetch, reset } =
-    usePaths();
+  const {
+    paths,
+    loading,
+    error,
+    hasSearched,
+    lastInput,
+    usdPrices,
+    search,
+    refetch,
+    reset,
+  } = usePaths();
   const lastNetwork = useRef(network);
 
   // Accessibility: State for ARIA live region announcements
@@ -212,7 +221,11 @@ export default function HomePage() {
                   {live ? (loading ? "Updating…" : "Live") : "Go live"}
                 </button>
               </div>
-              <PathComparison paths={paths} rateChanges={rateChanges} />
+              <PathComparison
+                paths={paths}
+                usdPrices={usdPrices}
+                rateChanges={rateChanges}
+              />
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
@@ -222,6 +235,7 @@ export default function HomePage() {
                   paths={paths}
                   direction={lastInput?.direction ?? "strict-send"}
                   network={lastInput?.network ?? "mainnet"}
+                  usdPrices={usdPrices}
                   rateChanges={rateChanges}
                 />
               </section>
