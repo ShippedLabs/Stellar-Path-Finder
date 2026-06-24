@@ -24,6 +24,13 @@ export interface Path {
    * could not be fetched. Optional so existing callers remain unaffected.
    */
   hopRates?: string[];
+  /**
+   * Which routing layer produced this path.
+   * "classic" = Horizon SDEX / AMM pools.
+   * "soroban" = Soroban-based DEX aggregator (Soroswap).
+   * Defaults to "classic" when absent so existing paths are unaffected.
+   */
+  routeSource?: "classic" | "soroban";
 }
 
 export interface FindPathsInput {

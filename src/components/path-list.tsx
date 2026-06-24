@@ -206,6 +206,16 @@ export function PathList({ paths, direction, network, rateChanges }: Props) {
                     {assetLabel(path.source)}
                     <span className="mx-1.5 text-slate-400" aria-hidden="true">→</span>
                     {assetLabel(path.destination)}
+                    <span
+                      className={
+                        "ml-2 inline-block rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider align-middle " +
+                        (path.routeSource === "soroban"
+                          ? "bg-violet-500/10 text-violet-300"
+                          : "bg-slate-700/60 text-slate-400")
+                      }
+                    >
+                      {path.routeSource === "soroban" ? "Soroban" : "Classic"}
+                    </span>
                   </td>
                   <td className="hidden px-4 py-3 text-slate-200 sm:table-cell">
                     {formatAmount(path.sourceAmount)}{" "}
