@@ -10,6 +10,12 @@ interface Props {
   onClick?: () => void;
   rank?: number;
   rateChange?: RateChange;
+  /**
+   * Liquidity depth ratio relative to the deepest route (0–1). When provided,
+   * a proportional depth bar is rendered at the bottom of the card. Omit (or
+   * leave undefined) to suppress the bar entirely.
+   */
+  depthRatio?: number;
 }
 
 function formatAmount(value: string): string {
@@ -34,6 +40,7 @@ export function PathCard({
   onClick,
   rank,
   rateChange,
+  depthRatio,
 }: Props) {
   const interactive = typeof onClick === "function";
   const Tag = interactive ? "button" : "div";
@@ -43,6 +50,11 @@ export function PathCard({
   const rateLabel = Number.isFinite(rate)
     ? `1 ${sourceLabel} ≈ ${formatAmount(path.rate)} ${destLabel}`
     : `${sourceLabel} → ${destLabel}`;
+
+  const showDepthBar = typeof depthRatio === "number";
+  const depthPct = showDepthBar
+    ? Math.round(Math.max(0, Math.min(1, depthRatio)) * 100)
+    : 0;
 
   return (
     <Tag
@@ -94,6 +106,21 @@ export function PathCard({
           </dd>
         </div>
       </dl>
+
+      {showDepthBar ? (
+        <div aria-label={`Liquidity depth: ${depthPct}% of deepest route`}>
+          <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
+            <span>Liquidity depth</span>
+            <span>{depthPct}%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-emerald-500/60 transition-all duration-500"
+              style={{ width: `${depthPct}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
     </Tag>
   );
 }
