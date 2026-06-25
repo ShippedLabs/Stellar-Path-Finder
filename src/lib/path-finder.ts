@@ -1,6 +1,7 @@
 import { Asset } from "@stellar/stellar-sdk";
 import { getHorizonServer } from "@/lib/horizon-client";
 import { fetchMidPrice } from "@/lib/order-book";
+import { fetchSorobanPaths } from "@/lib/soroban-router";
 import type {
   AssetRef,
   AssetType,
@@ -71,6 +72,7 @@ function normalize(record: HorizonPathRecord): Path {
     destinationAmount: record.destination_amount,
     hops: record.path.map(fromHorizonAsset),
     rate: computeRate(record.source_amount, record.destination_amount),
+    routeSource: "classic" as const,
   };
 }
 
@@ -84,9 +86,22 @@ export async function findPaths(input: FindPathsInput): Promise<Path[]> {
       ? server.strictSendPaths(source, input.amount, [destination])
       : server.strictReceivePaths([source], destination, input.amount);
 
-  const page = await builder.call();
-  const records = page.records as unknown as HorizonPathRecord[];
-  return records.map(normalize);
+  // Run classic Horizon path search and Soroban DEX query in parallel.
+  // allSettled ensures a failure in either source cannot suppress the other.
+  const [classicResult, sorobanResult] = await Promise.allSettled([
+    builder.call().then((page) => {
+      const records = page.records as unknown as HorizonPathRecord[];
+      return records.map(normalize);
+    }),
+    fetchSorobanPaths(input),
+  ]);
+
+  const classicPaths =
+    classicResult.status === "fulfilled" ? classicResult.value : [];
+  const sorobanPaths =
+    sorobanResult.status === "fulfilled" ? sorobanResult.value : [];
+
+  return [...classicPaths, ...sorobanPaths];
 }
 
 /**

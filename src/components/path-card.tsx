@@ -81,6 +81,16 @@ export function PathCard({
               #{rank}
             </span>
           ) : null}
+          <span
+            className={
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider " +
+              (path.routeSource === "soroban"
+                ? "bg-violet-500/10 text-violet-300"
+                : "bg-slate-700/60 text-slate-400")
+            }
+          >
+            {path.routeSource === "soroban" ? "Soroban" : "Classic"}
+          </span>
           <span className="rounded-full border border-slate-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400">
             {hopBadge(path.hops.length)}
           </span>
