@@ -25,13 +25,14 @@ export interface Path {
    */
   hopRates?: string[];
   /**
-   * Which routing layer produced this path.
-   * "classic" = Horizon SDEX / AMM pools.
-   * "soroban" = Soroban-based DEX aggregator (Soroswap).
-   * Defaults to "classic" when absent so existing paths are unaffected.
+   * Liquidity depth ratio relative to the deepest of the top three routes
+   * (0–1). Populated asynchronously after the path search completes by
+   * querying the ask side of the first hop's order book. `undefined` means
+   * depth has not been fetched yet; the bar is not rendered in that state.
    */
-  routeSource?: "classic" | "soroban";
+  depthRatio?: number;
 }
+
 
 export interface FindPathsInput {
   network: Network;
