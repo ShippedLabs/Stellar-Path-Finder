@@ -24,7 +24,15 @@ export interface Path {
    * could not be fetched. Optional so existing callers remain unaffected.
    */
   hopRates?: string[];
+  /**
+   * Liquidity depth ratio relative to the deepest of the top three routes
+   * (0–1). Populated asynchronously after the path search completes by
+   * querying the ask side of the first hop's order book. `undefined` means
+   * depth has not been fetched yet; the bar is not rendered in that state.
+   */
+  depthRatio?: number;
 }
+
 
 export interface FindPathsInput {
   network: Network;
