@@ -2,10 +2,13 @@
 
 import { useCallback, useRef, useState } from "react";
 import { attachHopRates, findPaths } from "@/lib/path-finder";
-import type { FindPathsInput, Path } from "@/types/path";
+import { fetchUsdPrice } from "@/lib/usd-price";
+import { assetKey } from "@/types/path";
+import type { AssetRef, FindPathsInput, Path } from "@/types/path";
 
 interface UsePathsResult {
   paths: Path[];
+  usdPrices: Record<string, number>;
   loading: boolean;
   error: string | null;
   hasSearched: boolean;
@@ -21,8 +24,12 @@ function describeError(err: unknown): string {
   return "Unable to fetch paths";
 }
 
+// Session cache to store fetched prices during the duration of the session
+const priceCache = new Map<string, number>();
+
 export function usePaths(): UsePathsResult {
   const [paths, setPaths] = useState<Path[]>([]);
+  const [usdPrices, setUsdPrices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -43,6 +50,43 @@ export function usePaths(): UsePathsResult {
       const results = await findPaths(input);
       if (id !== requestId.current) return;
       setPaths(results);
+
+      // Fetch USD prices for unique assets in parallel
+      if (input.network === "mainnet") {
+        const uniqueAssets = new Map<string, AssetRef>();
+        for (const path of results) {
+          uniqueAssets.set(assetKey(path.source), path.source);
+          uniqueAssets.set(assetKey(path.destination), path.destination);
+        }
+
+        const keysToFetch = Array.from(uniqueAssets.keys());
+        const fetchPromises = keysToFetch.map(async (key) => {
+          if (priceCache.has(key)) {
+            return { key, price: priceCache.get(key)! };
+          }
+          const asset = uniqueAssets.get(key)!;
+          const price = await fetchUsdPrice(input.network, asset);
+          if (price !== null) {
+            priceCache.set(key, price);
+          }
+          return { key, price };
+        });
+
+        Promise.all(fetchPromises)
+          .then((resolved) => {
+            if (id !== requestId.current) return;
+            const newPrices: Record<string, number> = {};
+            for (const item of resolved) {
+              if (item.price !== null && item.price !== undefined) {
+                newPrices[item.key] = item.price;
+              }
+            }
+            setUsdPrices((prev) => ({ ...prev, ...newPrices }));
+          })
+          .catch(() => {
+            // Skip price fetch silently on failure
+          });
+      }
 
       // Enrich with per-hop rates in the background so the initial results
       // render immediately. A late or failed enrichment leaves base paths intact.
@@ -73,6 +117,7 @@ export function usePaths(): UsePathsResult {
   const reset = useCallback(() => {
     requestId.current += 1;
     setPaths([]);
+    setUsdPrices({});
     setError(null);
     setLoading(false);
     setHasSearched(false);
@@ -80,5 +125,6 @@ export function usePaths(): UsePathsResult {
     lastInputRef.current = null;
   }, []);
 
-  return { paths, loading, error, hasSearched, lastInput, search, refetch, reset };
+  return { paths, usdPrices, loading, error, hasSearched, lastInput, search, refetch, reset };
 }
+

@@ -18,7 +18,7 @@ const LIVE_POLL_MS = 15_000;
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, lastInput, search, refetch, reset } =
+  const { paths, usdPrices, loading, error, hasSearched, lastInput, search, refetch, reset } =
     usePaths();
   const lastNetwork = useRef(network);
 
@@ -223,6 +223,7 @@ export default function HomePage() {
                   direction={lastInput?.direction ?? "strict-send"}
                   network={lastInput?.network ?? "mainnet"}
                   rateChanges={rateChanges}
+                  usdPrices={usdPrices}
                 />
               </section>
             </div>

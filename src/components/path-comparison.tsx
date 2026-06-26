@@ -12,6 +12,7 @@ interface Props {
   limit?: number;
   /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
   rateChanges?: Map<string, RateChange>;
+  usdPrices?: Record<string, number>;
 }
 
 export function PathComparison({
