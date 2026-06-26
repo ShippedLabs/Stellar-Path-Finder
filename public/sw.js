@@ -46,6 +46,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
+  if (!request.url.startsWith("http")) return;
 
   if (request.mode === "navigate") {
     // Network-first for page navigations, fall back to the cached shell offline.
