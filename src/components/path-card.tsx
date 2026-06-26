@@ -1,7 +1,7 @@
 "use client";
 
 import { RateChangeIndicator } from "@/components/rate-change-indicator";
-import { assetLabel } from "@/types/path";
+import { assetKey, assetLabel } from "@/types/path";
 import type { Path, RateChange } from "@/types/path";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   onClick?: () => void;
   rank?: number;
   rateChange?: RateChange;
+  usdPrices?: Record<string, number>;
 }
 
 function formatAmount(value: string): string {
@@ -20,6 +21,14 @@ function formatAmount(value: string): string {
   if (n < 1) return n.toFixed(7).replace(/0+$/, "").replace(/\.$/, "");
   if (n < 1000) return n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function formatUsd(amount: string, price: number | undefined): string | null {
+  if (price === undefined || price === null) return null;
+  const amt = Number(amount);
+  if (!Number.isFinite(amt)) return null;
+  const val = amt * price;
+  return "~$" + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function hopBadge(hops: number): string {
@@ -34,6 +43,7 @@ export function PathCard({
   onClick,
   rank,
   rateChange,
+  usdPrices,
 }: Props) {
   const interactive = typeof onClick === "function";
   const Tag = interactive ? "button" : "div";
@@ -94,13 +104,27 @@ export function PathCard({
         <div>
           <dt className="text-slate-500">Send</dt>
           <dd className="mt-0.5 font-medium text-slate-200">
-            {formatAmount(path.sourceAmount)} {sourceLabel}
+            <div>
+              {formatAmount(path.sourceAmount)} {sourceLabel}
+            </div>
+            {usdPrices && usdPrices[assetKey(path.source)] !== undefined && (
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                {formatUsd(path.sourceAmount, usdPrices[assetKey(path.source)])}
+              </div>
+            )}
           </dd>
         </div>
         <div>
           <dt className="text-slate-500">Receive</dt>
           <dd className="mt-0.5 font-medium text-slate-200">
-            {formatAmount(path.destinationAmount)} {destLabel}
+            <div>
+              {formatAmount(path.destinationAmount)} {destLabel}
+            </div>
+            {usdPrices && usdPrices[assetKey(path.destination)] !== undefined && (
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                {formatUsd(path.destinationAmount, usdPrices[assetKey(path.destination)])}
+              </div>
+            )}
           </dd>
         </div>
       </dl>

@@ -18,7 +18,7 @@ const LIVE_POLL_MS = 15_000;
 
 export default function HomePage() {
   const { network } = useNetwork();
-  const { paths, loading, error, hasSearched, lastInput, search, refetch, reset } =
+  const { paths, usdPrices, loading, error, hasSearched, lastInput, search, refetch, reset } =
     usePaths();
   const lastNetwork = useRef(network);
 
@@ -212,7 +212,7 @@ export default function HomePage() {
                   {live ? (loading ? "Updating…" : "Live") : "Go live"}
                 </button>
               </div>
-              <PathComparison paths={paths} rateChanges={rateChanges} />
+              <PathComparison paths={paths} rateChanges={rateChanges} usdPrices={usdPrices} />
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
@@ -223,6 +223,7 @@ export default function HomePage() {
                   direction={lastInput?.direction ?? "strict-send"}
                   network={lastInput?.network ?? "mainnet"}
                   rateChanges={rateChanges}
+                  usdPrices={usdPrices}
                 />
               </section>
             </div>

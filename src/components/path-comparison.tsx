@@ -10,9 +10,10 @@ interface Props {
   limit?: number;
   /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
   rateChanges?: Map<string, RateChange>;
+  usdPrices?: Record<string, number>;
 }
 
-export function PathComparison({ paths, limit = 3, rateChanges }: Props) {
+export function PathComparison({ paths, limit = 3, rateChanges, usdPrices }: Props) {
   const top = useMemo(() => {
     return [...paths]
       .sort((a, b) => Number(b.rate) - Number(a.rate))
@@ -36,6 +37,7 @@ export function PathComparison({ paths, limit = 3, rateChanges }: Props) {
             path={path}
             rank={i + 1}
             rateChange={rateChanges?.get(pathChainKey(path))}
+            usdPrices={usdPrices}
           />
         ))}
       </div>

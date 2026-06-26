@@ -15,6 +15,7 @@ interface Props {
   network: Network;
   /** Per-route rate movement since the last live-poll fetch, keyed by pathChainKey. */
   rateChanges?: Map<string, RateChange>;
+  usdPrices?: Record<string, number>;
 }
 
 const COLUMNS: {
@@ -53,6 +54,14 @@ function formatAmount(value: string): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function formatUsd(amount: string, price: number | undefined): string | null {
+  if (price === undefined || price === null) return null;
+  const amt = Number(amount);
+  if (!Number.isFinite(amt)) return null;
+  const val = amt * price;
+  return "~$" + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function pathId(path: Path): string {
   return [
     assetKey(path.source),
@@ -63,7 +72,7 @@ function pathId(path: Path): string {
   ].join("|");
 }
 
-export function PathList({ paths, direction, network, rateChanges }: Props) {
+export function PathList({ paths, direction, network, rateChanges, usdPrices }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -218,16 +227,30 @@ export function PathList({ paths, direction, network, rateChanges }: Props) {
                     </span>
                   </td>
                   <td className="hidden px-4 py-3 text-slate-200 sm:table-cell">
-                    {formatAmount(path.sourceAmount)}{" "}
-                    <span className="text-slate-400">
-                      {assetLabel(path.source)}
-                    </span>
+                    <div>
+                      {formatAmount(path.sourceAmount)}{" "}
+                      <span className="text-slate-400">
+                        {assetLabel(path.source)}
+                      </span>
+                    </div>
+                    {usdPrices && usdPrices[assetKey(path.source)] !== undefined && (
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {formatUsd(path.sourceAmount, usdPrices[assetKey(path.source)])}
+                      </div>
+                    )}
                   </td>
                   <td className="hidden px-4 py-3 text-slate-200 sm:table-cell">
-                    {formatAmount(path.destinationAmount)}{" "}
-                    <span className="text-slate-400">
-                      {assetLabel(path.destination)}
-                    </span>
+                    <div>
+                      {formatAmount(path.destinationAmount)}{" "}
+                      <span className="text-slate-400">
+                        {assetLabel(path.destination)}
+                      </span>
+                    </div>
+                    {usdPrices && usdPrices[assetKey(path.destination)] !== undefined && (
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {formatUsd(path.destinationAmount, usdPrices[assetKey(path.destination)])}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-medium text-emerald-300">
                     <span className="inline-flex items-center gap-1.5">
