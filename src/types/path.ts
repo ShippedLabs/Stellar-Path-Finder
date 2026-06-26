@@ -4,6 +4,12 @@ export type Direction = "strict-send" | "strict-receive";
 
 export type AssetType = "native" | "credit_alphanum4" | "credit_alphanum12";
 
+/**
+ * Which routing engine produced a path: the classic SDEX path-payment
+ * search ("classic") or the Soroban DEX router ("soroban").
+ */
+export type RouteSource = "classic" | "soroban";
+
 export interface AssetRef {
   type: AssetType;
   code: string;
@@ -17,6 +23,8 @@ export interface Path {
   destinationAmount: string;
   hops: AssetRef[];
   rate: string;
+  /** Routing engine that produced this path. */
+  routeSource: RouteSource;
   /**
    * Mid-price for each consecutive hop in the route
    * (source -> hop1, ..., hopN -> destination). Populated asynchronously
