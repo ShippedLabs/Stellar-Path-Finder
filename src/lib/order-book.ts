@@ -41,3 +41,35 @@ export async function fetchMidPrice(
 
   return ((bid + ask) / 2).toFixed(7);
 }
+
+/**
+ * Fetches the SDEX order book for the `selling -> buying` pair and returns the
+ * total available volume on the ask side summed across the top `levels` price
+ * levels. This gives a coarse measure of how much liquidity is available to
+ * fill the first hop of a route at the best prices.
+ *
+ * Returns `0` when the order book has no asks. Network/SDK errors are
+ * intentionally left to propagate so callers can decide how to degrade.
+ *
+ * @param levels - Maximum number of ask levels to sum (default: 10)
+ */
+export async function fetchDepth(
+  network: Network,
+  selling: AssetRef,
+  buying: AssetRef,
+  levels = 10,
+): Promise<number> {
+  const server = getHorizonServer(network);
+  const book = await server
+    .orderbook(toSdkAsset(selling), toSdkAsset(buying))
+    .limit(levels)
+    .call();
+
+  const asks = book.asks.slice(0, levels);
+  if (asks.length === 0) return 0;
+
+  return asks.reduce((sum, level) => {
+    const amount = Number(level.amount);
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+}

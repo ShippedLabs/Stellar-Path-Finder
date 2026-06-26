@@ -212,7 +212,7 @@ export default function HomePage() {
                   {live ? (loading ? "Updating…" : "Live") : "Go live"}
                 </button>
               </div>
-              <PathComparison paths={paths} rateChanges={rateChanges} usdPrices={usdPrices} />
+              <PathComparison paths={paths} network={network} rateChanges={rateChanges} />
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click
