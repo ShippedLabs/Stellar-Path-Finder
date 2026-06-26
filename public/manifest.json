@@ -1,0 +1,48 @@
+{
+  "name": "Stellar Path Finder",
+  "short_name": "Path Finder",
+  "description": "Compare Stellar path payment routes between any two assets.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "categories": ["finance", "utilities"],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "438x892",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Stellar Path Finder on mobile"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1919x990",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Stellar Path Finder on desktop"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
