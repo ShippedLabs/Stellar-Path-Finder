@@ -11,6 +11,7 @@
  * Bump CACHE on any change to the precache list to invalidate old caches.
  */
 
+// Bump this string on every sw.js change to invalidate old caches.
 const CACHE = "spf-v1";
 const APP_SHELL = [
   "/",
