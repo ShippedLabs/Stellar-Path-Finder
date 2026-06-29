@@ -89,6 +89,11 @@ export function PathForm({ onSubmit, loading = false }: Props) {
     setTimeout(() => setSaveNotification(null), 2000);
   }, [network, direction, source, destination, amount, canSubmit]);
 
+  const handleSwapAssets = useCallback(() => {
+    setSource(destination);
+    setDestination(source);
+  }, [destination, source]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -125,7 +130,7 @@ export function PathForm({ onSubmit, loading = false }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-start">
         <AssetSelector
           id="source-asset"
           label="From"
@@ -135,6 +140,29 @@ export function PathForm({ onSubmit, loading = false }: Props) {
           customAssets={customAssets}
           onAddCustom={addCustomAsset}
         />
+        <button
+          type="button"
+          onClick={handleSwapAssets}
+          aria-label="Swap source and destination"
+          title="Swap source and destination"
+          className="inline-flex h-10 w-10 items-center justify-center justify-self-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 transition-colors hover:border-slate-600 hover:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 md:mt-7"
+        >
+          <svg
+            className="h-5 w-5 rotate-90 md:rotate-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M8 3 4 7l4 4" />
+            <path d="M4 7h16" />
+            <path d="m16 21 4-4-4-4" />
+            <path d="M20 17H4" />
+          </svg>
+        </button>
         <AssetSelector
           id="destination-asset"
           label="To"
