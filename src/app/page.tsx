@@ -10,6 +10,7 @@ import { SavedPairsChips } from "@/components/saved-pairs-chips";
 import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
+import { exportPathsAsCsv } from "@/lib/export-csv";
 import { pathChainKey } from "@/types/path";
 import type { RateChange } from "@/types/path";
 
@@ -183,34 +184,45 @@ export default function HomePage() {
                 <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                   Rates update with order book activity
                 </p>
-                <button
-                  type="button"
-                  onClick={toggleLive}
-                  disabled={loading}
-                  aria-pressed={live}
-                  aria-label={
-                    live ? "Turn off live rate updates" : "Turn on live rate updates"
-                  }
-                  className={
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50 " +
-                    (live
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
-                      : "border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-600")
-                  }
-                >
-                  <span
-                    aria-hidden="true"
-                    className={
-                      "inline-block h-2 w-2 rounded-full " +
-                      (live
-                        ? loading
-                          ? "animate-pulse bg-emerald-400"
-                          : "bg-emerald-400"
-                        : "bg-slate-500")
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exportPathsAsCsv(paths)}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleLive}
+                    disabled={loading}
+                    aria-pressed={live}
+                    aria-label={
+                      live
+                        ? "Turn off live rate updates"
+                        : "Turn on live rate updates"
                     }
-                  />
-                  {live ? (loading ? "Updating…" : "Live") : "Go live"}
-                </button>
+                    className={
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50 " +
+                      (live
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
+                        : "border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-600")
+                    }
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={
+                        "inline-block h-2 w-2 rounded-full " +
+                        (live
+                          ? loading
+                            ? "animate-pulse bg-emerald-400"
+                            : "bg-emerald-400"
+                          : "bg-slate-500")
+                      }
+                    />
+                    {live ? (loading ? "Updating…" : "Live") : "Go live"}
+                  </button>
+                </div>
               </div>
               <PathComparison paths={paths} network={network} rateChanges={rateChanges} />
               <section className="space-y-3">
