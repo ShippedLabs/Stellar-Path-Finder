@@ -5,6 +5,13 @@ jest.mock("@/lib/horizon-client", () => ({
   getHorizonServer: jest.fn(),
 }));
 
+// findPaths queries the Soroban DEX router in parallel with Horizon. Without
+// this mock the test issues a real RPC call, which is non-deterministic and
+// intermittently exceeds the Jest timeout.
+jest.mock("@/lib/soroban-router", () => ({
+  fetchSorobanPaths: jest.fn().mockResolvedValue([]),
+}));
+
 const mockedGetHorizonServer = jest.mocked(getHorizonServer);
 
 function mockPathBuilder(records: unknown[]) {
@@ -67,6 +74,7 @@ describe("path-finder", () => {
         destinationAmount: "2.5000000",
         hops: [{ type: "credit_alphanum4", code: "AQUA", issuer: "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA" }],
         rate: "0.2500000",
+        routeSource: "classic",
       },
     ]);
   });

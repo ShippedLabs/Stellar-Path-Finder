@@ -16,6 +16,11 @@ interface Props {
    * leave undefined) to suppress the bar entirely.
    */
   depthRatio?: number;
+  /**
+   * USD price per asset, keyed by `assetKey`. When an entry exists for an
+   * asset, its amount is annotated with an approximate USD value.
+   */
+  usdPrices?: Record<string, number>;
 }
 
 function formatAmount(value: string): string {
@@ -49,6 +54,7 @@ export function PathCard({
   rank,
   rateChange,
   depthRatio,
+  usdPrices,
 }: Props) {
   const interactive = typeof onClick === "function";
   const Tag = interactive ? "button" : "div";

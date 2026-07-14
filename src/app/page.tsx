@@ -224,7 +224,7 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-              <PathComparison paths={paths} network={network} rateChanges={rateChanges} />
+              <PathComparison paths={paths} network={network} rateChanges={rateChanges} usdPrices={usdPrices} />
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   All {paths.length} path{paths.length === 1 ? "" : "s"} · click

@@ -20,6 +20,7 @@ export function PathComparison({
   network,
   limit = 3,
   rateChanges,
+  usdPrices,
 }: Props) {
   const top = useMemo(() => {
     return [...paths]
@@ -99,6 +100,7 @@ export function PathComparison({
             rank={i + 1}
             rateChange={rateChanges?.get(pathChainKey(path))}
             depthRatio={depthRatios.get(pathChainKey(path))}
+            usdPrices={usdPrices}
           />
         ))}
       </div>
