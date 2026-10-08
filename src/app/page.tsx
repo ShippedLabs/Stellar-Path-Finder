@@ -11,6 +11,8 @@ import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
 import { exportPathsAsCsv } from "@/lib/export-csv";
+import { checkHorizonHealth } from "@/lib/network-health";
+import type { HorizonHealth } from "@/lib/network-health";
 import { pathChainKey } from "@/types/path";
 import type { RateChange } from "@/types/path";
 
@@ -25,6 +27,8 @@ export default function HomePage() {
 
   // Accessibility: State for ARIA live region announcements
   const [announcement, setAnnouncement] = useState("");
+  const [horizonHealth, setHorizonHealth] = useState<HorizonHealth>("ok");
+  const [healthBannerDismissed, setHealthBannerDismissed] = useState(false);
 
   // Live polling: re-run the last search on an interval and highlight how each
   // route's rate has moved since the previous fetch.
@@ -39,6 +43,19 @@ export default function HomePage() {
   // A poll re-fetch keeps the existing results on screen (only the initial /
   // empty load shows the skeleton).
   const isPolling = live && paths.length > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    setHealthBannerDismissed(false);
+
+    void checkHorizonHealth(network).then((health) => {
+      if (!cancelled) setHorizonHealth(health);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [network]);
 
   useEffect(() => {
     if (lastNetwork.current === network) return;
@@ -159,6 +176,24 @@ export default function HomePage() {
       </header>
 
       <section className="mt-8 rounded-xl border border-slate-700 bg-slate-900/40 p-5 sm:mt-12 sm:p-8">
+        {horizonHealth === "degraded" && !healthBannerDismissed ? (
+          <div
+            role="status"
+            className="mb-5 flex items-start justify-between gap-4 rounded-lg border border-amber-600/60 bg-amber-950/30 px-4 py-3 text-amber-100"
+          >
+            <p className="text-sm">
+              Horizon may be experiencing delays. Results could be slower than usual.
+            </p>
+            <button
+              type="button"
+              onClick={() => setHealthBannerDismissed(true)}
+              aria-label="Dismiss Horizon status notice"
+              className="shrink-0 rounded px-2 py-1 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-900/50 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
         <SavedPairsChips network={network} onSelectPair={search} />
         <PathForm onSubmit={search} loading={loading} />
       </section>
