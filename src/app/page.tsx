@@ -11,6 +11,8 @@ import { useInterval } from "@/hooks/use-interval";
 import { useNetwork } from "@/hooks/use-network";
 import { usePaths } from "@/hooks/use-paths";
 import { exportPathsAsCsv } from "@/lib/export-csv";
+import { checkHorizonHealth } from "@/lib/network-health";
+import type { NetworkHealthStatus } from "@/lib/network-health";
 import { pathChainKey } from "@/types/path";
 import type { RateChange } from "@/types/path";
 
@@ -37,8 +39,28 @@ export default function HomePage() {
   const prevRatesRef = useRef<Map<string, number>>(new Map());
 
   // A poll re-fetch keeps the existing results on screen (only the initial /
-  // empty load shows the skeleton).
+  // Empty load shows the skeleton).
   const isPolling = live && paths.length > 0;
+
+  // Network health monitoring: checks Horizon root endpoint on mount and network toggle.
+  const [healthStatus, setHealthStatus] = useState<NetworkHealthStatus | null>(
+    null,
+  );
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+    setBannerDismissed(false);
+    void checkHorizonHealth(network).then((status) => {
+      if (isCurrent) {
+        setHealthStatus(status);
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [network]);
 
   useEffect(() => {
     if (lastNetwork.current === network) return;
@@ -157,6 +179,57 @@ export default function HomePage() {
           every price, and the best rate at a glance.
         </p>
       </header>
+
+      {healthStatus === "degraded" && !bannerDismissed ? (
+        <aside
+          role="status"
+          aria-label="Horizon network warning"
+          className="mt-6 flex items-start justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200"
+        >
+          <div className="flex items-start gap-3">
+            <svg
+              className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-300">
+                Horizon may be experiencing delays
+              </p>
+              <p className="mt-0.5 text-xs text-amber-200/90 sm:text-sm">
+                Results could be slower than usual. The search form remains fully functional.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBannerDismissed(true)}
+            aria-label="Dismiss warning"
+            className="rounded-lg p-1 text-amber-400 transition-colors hover:bg-amber-500/20 hover:text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
+            <span className="sr-only">Dismiss</span>
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </aside>
+      ) : null}
 
       <section className="mt-8 rounded-xl border border-slate-700 bg-slate-900/40 p-5 sm:mt-12 sm:p-8">
         <SavedPairsChips network={network} onSelectPair={search} />
